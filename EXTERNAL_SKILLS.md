@@ -216,6 +216,8 @@
 ## 备注
 
 - 表内描述为本机 SKILL.md frontmatter 中的 description（截断至 300 字符）。
+- 仓库 skills/ 目录下含下列外部 skill 的镜像副本（迁移自 agent-bootstrap，与本机已装版本逐文件一致，供离线/快速安装）：docx、pdf、pptx、xlsx、frontend-design、skill-creator、grill-me、neat-freak、storage-analyzer、pua；gents/extensions/pua 为 pua 的 pi 适配层镜像。权威来源与安装地址仍以本表为准。
+
 - Gonglitian/agent-skills 组内部分 skill 有更早的上游：skill-creator → anthropics/skills；find-skills → vercel-labs/skills；marp-slide → grashooper/agent-toolkit；weights-and-biases → xiaolai/AI-Research-SKILLs（Orchestra Research）；obsidian-bases/obsidian-cli/obsidian-markdown → mdwoicke/obsidian-skills；audio-transcribe 上游疑似 ericgandrade/claude-superskills（同名 audio-transcriber，待进一步核对）。本清单以本机实际安装的最终来源（Gonglitian/agent-skills）为准，并在组内标注上述原始出处。
 - claude-code-polished-documents-skills-* 为 promptadvisers 打包的 Anthropic 官方文档系 skills 历史版本，与现行版功能重叠。
 - 许可证列 — 表示 SKILL.md 未标注，请以上游仓库说明为准（多数为 MIT）。

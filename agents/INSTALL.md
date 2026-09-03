@@ -41,7 +41,7 @@
 
 ### 1.4 仓库定位
 
-优先使用当前工作目录中的 agent-bootstrap 仓库；否则克隆 `https://github.com/M1zukiri/agent-bootstrap` 到临时目录，安装完成后可删除。
+优先使用当前工作目录中的 m1zukiri-skills 仓库；否则克隆 `https://github.com/M1zukiri/m1zukiri-skills` 到临时目录，安装完成后可删除。官方文档 skills（docx / pdf / pptx / xlsx 等）亦可直接从其上游（anthropics/skills）获取。
 
 ## 2. 兼容性检查
 

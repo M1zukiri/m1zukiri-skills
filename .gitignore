@@ -1,0 +1,16 @@
+# Never commit real settings — template only
+settings.json
+
+# Never commit credentials or tokens
+*.token
+*.key
+*.pem
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Codex credentials / machine-specific config
+auth.json
+config.toml
