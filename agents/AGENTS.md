@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本规范适用于本机所有 Agent 环境（Codex、OMP 等），由 agent-bootstrap 仓库统一同步。
+本规范适用于本机所有 Agent 环境（Codex、OMP 等），由 m1zukiri-skills 仓库统一同步。
 
 始终使用中文进行思考、回答和代码注释。混合语言会降低质量。
 
@@ -126,7 +126,7 @@
 
 **公开仓库同步：绝不写入机密。**
 
-本机 Agent 配置通过公开 GitHub 仓库统一同步：`https://github.com/M1zukiri/agent-bootstrap`（原名 omp-bootstrap）。该仓库同时服务 Codex（分发至 `~/.codex/AGENTS.md`）与 OMP（分发至 `~/.omp/agent/AGENTS.md`）。
+本机 Agent 配置通过公开 GitHub 仓库统一同步：`https://github.com/M1zukiri/m1zukiri-skills`（仓库 `agents/` 目录）。该仓库同时服务 Codex（分发至 `~/.codex/AGENTS.md`）与 OMP（分发至 `~/.omp/agent/AGENTS.md`）。
 
 编辑属于此同步集的配置文件时，**绝对禁止**写入：
 - API key、token 或任何密码
@@ -134,7 +134,7 @@
 - 代理凭证或内部网络地址
 - 任何在公开仓库中暴露会造成损害的机密
 
-同步集包括：`AGENTS.md`、`config.yml`、`settings.template.json`、skills、extensions、`install.sh`、`install.ps1`。
+同步集包括：`agents/AGENTS.md`、`agents/config/config.yml`、`agents/config/settings.template.json`、自建 skills（`skills/`）、`EXTERNAL_SKILLS.md`。
 
 **绝不纳入同步集**：`auth.json`、`config.toml`、真实 `settings.json` 及任何含凭据的文件。提交前逐文件检查以上规则。
 

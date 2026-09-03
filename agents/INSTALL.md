@@ -1,6 +1,6 @@
-# INSTALL.md — agent-bootstrap 跨 Agent 安装流程
+# INSTALL.md — 跨 Agent 安装流程
 
-本文件定义「检查兼容性 → 安装 → 检查安装结果」的通用安装流程，供任何 Agent 在新终端、新环境自助执行。本流程不依赖平台安装脚本；`install.ps1` / `install.sh` 仅作为 OMP 快速路径保留。
+本文件定义「检查兼容性 → 安装 → 检查安装结果」的通用安装流程，供任何 Agent 在新终端、新环境自助执行。本流程不依赖平台安装脚本。
 
 ## 0. 流程总览
 
@@ -29,7 +29,7 @@
 
 ### 1.3 目标路径映射
 
-权威速查表见 `skills/neat-freak/references/agent-paths.md`，常用路径：
+常用路径：
 
 | Agent | 全局规则文件 | 用户技能目录 |
 |---|---|---|
@@ -73,7 +73,7 @@
 3. 适配：按矩阵要求修改目标副本（源仓库文件不动）：
    - grill-me：把「Ask 工具」改为当前环境的提问方式（文字提问 / 原生提问工具）。
    - pua：删除 hook、命令、持久化文件依赖，保留行为指导与方法论 references。
-4. OMP 专属（仅当目标为 OMP）：按 `config/config.yml` 与 `config/settings.template.json` 配置；`install.ps1` / `install.sh` 可作为此场景的快速路径。
+4. OMP 专属（仅当目标为 OMP）：按 `config/config.yml` 与 `config/settings.template.json` 配置。
 
 ## 4. 检查安装结果
 
@@ -86,7 +86,3 @@
 - 备份文件即回滚点：将 `.bak-<时间戳>` 恢复为正式文件名。
 - 仓库源为权威版本：重新执行本流程即可重装。
 - 删除技能时遵循项目规则：列出清单并向用户确认。
-
-## 附：现有脚本定位
-
-`install.ps1` / `install.sh` 保留但仅限 OMP 快速安装（含 OMP 插件、字体等专属步骤）。跨 Agent 安装一律以本流程为准。
