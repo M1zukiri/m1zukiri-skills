@@ -39,4 +39,4 @@ m1zukiri-skills/
 - tuoxie2046/claude-code-research-skills（autofigure / gpt-image / nano-banana 等原创）
 - YANZHANLIN/literature-review-skill（中文文献综述套件）
 - KKKKhazix/khazix-skills、mdwoicke/obsidian-skills
-- 独立来源 18 个（drawio-skill、mirofish、de-slop、pua、grill-me 等）
+- 独立来源 19 个（drawio-skill、mirofish、de-slop、pua、grill-me、taste-skill 等）

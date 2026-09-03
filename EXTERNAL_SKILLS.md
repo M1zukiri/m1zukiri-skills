@@ -212,6 +212,7 @@
 | **pua** |  | [https://github.com/tanweai/pua](https://github.com/tanweai/pua) | — |
 | **binder-design-campaign** | Gated protein design campaign: each expert judgement is a checkpoint a human signs off before compute is spent. Branches: de novo binder design (epitope choice, generation, co-folding ensemble ranking, ranked order sheet); structure and complex prediction with calibrated confidence; protein engineer… | [https://github.com/SPYfighting/my-academic-skills](https://github.com/SPYfighting/my-academic-skills) | MIT |
 | **eli5** | Explain a topic like I'm 5 year old. Use when the user types /eli5 <topic> or asks for a dead-simple picture explainer of how something works. | [https://github.com/kavyabhand/claude-eli5](https://github.com/kavyabhand/claude-eli5) | — |
+| **taste-skill** | Anti-slop frontend skill for landing pages, portfolios, and redesigns. The agent reads the brief, infers the right design direction, and ships interfaces that do not look templated. Real design systems when applicable, audit-first on redesigns, strict pre-flight check. (name: design-taste-frontend) | [https://github.com/Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | MIT |
 
 ## 备注
 
