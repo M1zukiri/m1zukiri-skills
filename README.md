@@ -8,7 +8,8 @@
 m1zukiri-skills/
 ├── skills/                  # 自建（自研原创）skills，目录名即 skill 名
 │   ├── rhizome/             # 轻量搜索纪律
-│   └── colorful-palette/    # 《配色设计速查手册》配色知识库（7 色系 / 1583 方案）
+│   ├── colorful-palette/    # 《配色设计速查手册》配色知识库（7 色系 / 1583 方案）
+│   └── gbt7714-citation/    # GB/T 7714—2025 参考文献著录（中英文，全文献类型）
 ├── EXTERNAL_SKILLS.md       # 外部下载 skills 清单：名称 / 用途 / 安装地址（按来源分组）
 ├── agents/                  # 其他 Agents 的环境文档与配置模板
 │   ├── AGENTS.md            # 全局行为规范（9 节，多 Agent 统一）
@@ -24,6 +25,7 @@ m1zukiri-skills/
 |---|---|
 | [rhizome](skills/rhizome/) | 轻量搜索纪律：不凭记忆作答、溯源一手、转载去重、区分口径、知不知为不知 |
 | [colorful-palette](skills/colorful-palette/) | 基于《配色设计速查手册》（红糖美学著）的配色知识库：7 大色系、162 类意象配色、52 类大自然配色、20 种流行风格，共 1583 个配色方案（CMYK + RGB 取自书中印刷色号，HEX 为派生值） |
+| [gbt7714-citation](skills/gbt7714-citation/) | 按 GB/T 7714—2025《信息与文献 参考文献著录规则》生成、格式化、核对中英文参考文献条目，覆盖期刊/图书/学位论文/会议/标准/专利/报告/网页等全部文献类型，并可将 2015 版旧格式升级为 2025 版 |
 
 ## 外部 skills
 
