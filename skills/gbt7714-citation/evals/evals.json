@@ -1,0 +1,39 @@
+{
+  "skill_name": "gbt7714-citation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我生成 GB/T 7714 格式的参考文献条目：期刊论文，作者为 于潇、刘义、柴跃廷，以及另外两位作者（按顺序排在他们后面，名字不必提供）；论文标题《互联网药品可信交易环境中主体资质审核备案模式》，发表在《清华大学学报(自然科学版)》，2012 年第 52 卷第 11 期，页码 1518-1523。",
+      "expected_output": "于潇, 刘义, 柴跃廷, 等. 互联网药品可信交易环境中主体资质审核备案模式[J]. 清华大学学报(自然科学版), 2012, 52(11): 1518-1523.",
+      "files": [],
+      "expectations": [
+        "类型码为 [J]（不是 [EB/OL]）",
+        "作者截断正确：前 3 位 + 等",
+        "卷期页格式为 年, 卷(期): 页 且页码前是冒号",
+        "期刊名不加书名号"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "这条参考文献是 2015 版 GB/T 7714 格式，帮我升级成 2025 版的新格式：PEEBLES P Z, Jr. Probability, random variables, and random signal principles[M]. 4th ed. New York: McGraw-Hill, 2001.",
+      "expected_output": "Peebles P Z, Jr. Probability, random variables, and random signal principles[M]. 4th ed. New York: McGraw-Hill, 2001.",
+      "files": [],
+      "expectations": [
+        "英文姓氏由全大写改为首字母大写（PEEBLES → Peebles）",
+        "其余字段与版本项（4th ed.）保持不变",
+        "条目仍为图书 [M] 格式"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "帮我把这篇论文写成参考文献：https://arxiv.org/abs/1112.6136（作者 Jenkins S D, Ruostekoski J）",
+      "expected_output": "Jenkins S D, Ruostekoski J. Controlled manipulation of light by cooperative response of atoms in an optical lattice[PP/OL]. arXiv(2011-12-28)[引用日期]. https://doi.org/10.48550/arXiv.1112.6136.",
+      "files": [],
+      "expectations": [
+        "识别为预印本 [PP/OL]，不写成期刊 [J]",
+        "包含出版平台（arXiv）、创建日期、引用日期（YYYY-MM-DD 方括号）",
+        "包含访问路径与永久标识符（arXiv DOI）"
+      ]
+    }
+  ]
+}
