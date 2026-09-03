@@ -96,6 +96,7 @@
 - 避免对简单任务过度思考；避免对困难任务思考不足。
 
 倾向于直接回答而非元解释。避免重复、套话和不必要的警告。优化每个 token 的有用输出。
+- 最终交付物中避免防御性说明、选型解释等过程描述——直接给出结论与可执行结果。
 
 ## 6. 版本号与 Git 仓库管理
 
@@ -137,6 +138,8 @@
 同步集包括：`agents/AGENTS.md`、`agents/config/config.yml`、`agents/config/settings.template.json`、自建 skills（`skills/`）、`EXTERNAL_SKILLS.md`。
 
 **绝不纳入同步集**：`auth.json`、`config.toml`、真实 `settings.json` 及任何含凭据的文件。提交前逐文件检查以上规则。
+
+- `AGENTS.md` 更新后需立即同步：提交并推送到远端仓库，同时覆盖本机各 Agent 环境副本（`~/.dsh`、`~/.codex`、`~/.omp/agent`）。
 
 **工具配置：不擅自修改。**
 
