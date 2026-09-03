@@ -1,0 +1,23 @@
+{
+  "skill_name": "rhizome",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "我想要查询音圈电机相关的原理、功能，以及当前常见的产品型号，尤其是光学反射镜架构中常用的，给出它们的价格、性能参数和供应商页面。",
+      "expected_output": "综合检索型任务（原理事实型 + 型号清单/市场信息混合型）：无单一权威源，模型记忆容易过期或编造。期望 AI ①原理/功能引用权威来源（技术文档/厂商官网）；②型号清单真实可验证，每个型号带性能参数（行程/力/响应/精度）与供应商页面链接，覆盖 ≥3 家真实厂商；③将音圈电机与光学反射镜架构（快反镜 FSM / 镜架微调）建立明确关联，说明该场景下的选型关注点；④价格信息诚实：标注来源与时效，或明确需询价/随数量行情浮动，不编造精确价格；⑤披露查不到/不确定的信息；⑥结论不带情绪化与绝对化断言。",
+      "files": [],
+      "assertions": [
+        {"name": "原理机制解释准确", "description": "正确解释音圈电机原理（洛伦兹力/磁场中的载流线圈）。", "check": "text_regex", "value": "洛伦兹|Lorentz|安培力|磁场.{0,30}电流|电流.{0,30}磁场"},
+        {"name": "原理有权威来源", "description": "原理/功能部分引用了权威来源（维基/官网文档/技术资料）。", "check": "text_regex", "value": "维基|Wikipedia|官网|官方|技术稿|说明文档|白皮书"},
+        {"name": "引用真实音圈电机厂商域名", "description": "答案引用了至少一家真实音圈电机/运动控制厂商的站点。", "check": "text_regex", "value": "physikinstrumente|pi-usa|smac|moticont|akribis|aerotech|thorlabs|kollmorgen|foster|parker|nidec|sanyo|tdk"},
+        {"name": "供应商覆盖面广（≥4 家）", "description": "答案覆盖了至少 4 家不同厂商/供应商。", "check": "text_regex_min", "value": "Physik|PI |SMAC|Moticont|Akribis|Aerotech|Thorlabs|Kollmorgen|Foster|Parker|Nidec|Sanyo|TDK|立创|Mouser|DigiKey", "min": 4},
+        {"name": "型号与参数绑定", "description": "至少出现一个具体产品型号，其附近有性能参数。", "check": "text_regex", "value": "[A-Z]{1,4}[- ]?[0-9]{2,4}[A-Z]{0,2}.{0,80}(行程|推力|力|响应|精度|mm|μm|um|\\bN\\b|Hz)"},
+        {"name": "建立反射镜架构关联", "description": "明确关联到光学反射镜/快反镜场景。", "check": "text_regex", "value": "快反|FSM|fast ste|反射镜|mirror|振镜|镜架|光学"},
+        {"name": "价格信息诚实", "description": "价格标注来源/时效，或明确说明需询价/随行情数量浮动。", "check": "text_regex", "value": "询价|报价|参考价|面议|随(数量|行情|市场|汇率)|波动|需联系|联系(销售|厂商|我们)"},
+        {"name": "披露信息缺口", "description": "明确披露查不到、不确定、停产或需核实的信息。", "check": "text_regex", "value": "未查到|查不到|未能|缺口|不确定|需确认|停产|EOL|待核实|建议(联系|核实|查询|确认)"},
+        {"name": "无绝对化情绪断言", "description": "不出现最佳/最优/无敌/碾压/吊打等绝对化情绪词。", "check": "text_not_match", "value": "最佳|最优|无敌|碾压|吊打|断层领先|最强|天花板"},
+        {"name": "来源可核验（≥6 链接）", "description": "大量可点击来源链接（≥6 个）。", "check": "text_regex_min", "value": "https?://\\S+", "min": 6}
+      ]
+    }
+  ]
+}

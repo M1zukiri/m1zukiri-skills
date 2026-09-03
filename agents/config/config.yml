@@ -1,0 +1,53 @@
+symbolPreset: nerd
+theme: 
+  dark: titanium
+  light: light
+setupVersion: 1
+terminal: 
+  showProgress: true
+tui: 
+  textSizing: true
+  tight: false
+  hyperlinks: always
+display: 
+  showTokenUsage: true
+  cacheMissMarker: true
+task: 
+  showResolvedModelBadge: true
+images: 
+  blockImages: true
+contextPromotion: 
+  enabled: true
+branchSummary: 
+  enabled: true
+compaction: 
+  strategy: context-full
+  handoffSaveToDisk: true
+statusLine: 
+  preset: full
+readLineNumbers: true
+personality: pragmatic
+lsp: 
+  formatOnWrite: true
+autoResume: true
+features: 
+  unexpectedStopDetection: true
+startup: 
+  quiet: true
+recap: 
+  idleSeconds: 120
+marketplace: 
+  autoUpdate: auto
+bashInterceptor: 
+  enabled: true
+github: 
+  enabled: true
+checkpoint: 
+  enabled: true
+todo: 
+  eager: always
+memory: 
+  backend: local
+autolearn: 
+  enabled: true
+includeWorkspaceTree: true
