@@ -11,6 +11,10 @@ settings.json
 .DS_Store
 Thumbs.db
 
+# Python bytecode cache —— .pyc 里嵌有绝对路径，公开仓库绝不能带
+__pycache__/
+*.pyc
+
 # Codex credentials / machine-specific config
 auth.json
 config.toml

@@ -220,6 +220,201 @@
     return 'other';
   }
 
+  // ------------------------------------------------ 运行时字面量反查
+  //
+  // 静态索引只能覆盖静态 HTML 里已经存在的元素；JS 运行时创建的弹窗、列表
+  // 在索引里没有条目（实测某应用型页面：弹窗打开后 43 个可见元素 0 个有坐标）。
+  // 倒排表把源码压成「字面量 → 候选位置」，反查改在点选这一刻做 —— 运行时
+  // DOM 就是真身，不存在索引与状态失配，也就不需要预先遍历页面状态。
+  //
+  // 只给唯一解：锚点命中多处时不猜，标 ambiguous 并列候选；再用「区域投票」
+  // 否决与上下文矛盾的孤立命中。后者不是锦上添花：通用 class（modal-overlay
+  // 在 9 个文件里都有）单看自身会产生看似合理实则错误的坐标，比没有更危险。
+
+  var LEXICON = (typeof window.__VPE_LEXICON__ === 'object' && window.__VPE_LEXICON__)
+    ? window.__VPE_LEXICON__ : null;
+
+  // 页面若暴露文案字典，就能把可见文本反查成 i18n key，而 key 在源码里几乎
+  // 唯一 —— 这是最强的一层锚点。探不到就安静跳过，不报错、不降级失败。
+  var I18N_REV = (function () {
+    var dict = null;
+    try {
+      if (window.MC && window.MC.i18n && window.MC.i18n.dictOf) { dict = window.MC.i18n.dictOf(); }
+      else if (window.i18n && typeof window.i18n === 'object') { dict = window.i18n; }
+      else if (window.__I18N__ && typeof window.__I18N__ === 'object') { dict = window.__I18N__; }
+    } catch (e) { dict = null; }
+    if (!dict) { return null; }
+    var rev = {};
+    (function walk(d, prefix) {
+      for (var k in d) {
+        if (!Object.prototype.hasOwnProperty.call(d, k)) { continue; }
+        var key = prefix ? prefix + '.' + k : k;
+        var v = d[k];
+        if (typeof v === 'string') {
+          // 短文案（"BPM"、"—" 这类）在字典里大量重复，反查出来的 key 不可信
+          if (v && v.length >= 4) { (rev[v] || (rev[v] = [])).push(key); }
+        } else if (v && typeof v === 'object') {
+          walk(v, key);
+        }
+      }
+    })(dict, '');
+    return Object.keys(rev).length ? rev : null;
+  })();
+
+  function lexMeta(pair) {
+    var file = LEXICON.files[pair[0]];
+    var coord = file + ':' + pair[1];
+    return {
+      coord: coord, file: file, own: true, hop: 0,
+      lineText: (LEXICON.lines && LEXICON.lines[coord]) || null
+    };
+  }
+
+  function describeLite(node) {
+    var r = visibleRect(node);
+    return {
+      idAttr: node.id || null,
+      cls: (typeof node.className === 'string' && node.className)
+        ? node.className.trim().split(/\s+/).slice(0, 4).join(' ') : '',
+      text: normText(node.textContent).slice(0, 60),
+      w: r ? Math.round(r.width) : 0,
+      h: r ? Math.round(r.height) : 0
+    };
+  }
+
+  // 四层锚点，命中即止。cheap=true 时跳过最贵的文本子串扫描（区域投票用）。
+  function lexAnchors(d, cheap) {
+    if (!LEXICON) { return null; }
+    var lex = LEXICON.lex, hit, i, k;
+
+    // ① i18n key：唯一性最高。同一文本可能对应多个 key（短词、通用词），
+    //    此时把它们的候选合并，交由区域投票裁决，而不是取第一个。
+    if (I18N_REV && d.text && I18N_REV[d.text]) {
+      var keys = I18N_REV[d.text], acc0 = [];
+      for (i = 0; i < keys.length; i++) {
+        hit = lex['key:' + keys[i]];
+        if (hit) { acc0 = acc0.concat(hit); }
+      }
+      if (acc0.length) {
+        return { layer: 'i18n', label: 'i18n key ' + keys.join('/'), pairs: acc0 };
+      }
+    }
+    // ② 文本字面量：元素文本是某个源码字面量的子串
+    if (!cheap && d.text && d.text.length >= 4) {
+      var acc = [];
+      for (k in lex) {
+        if (k.slice(0, 4) !== 'str:') { continue; }
+        if (k.length - 4 <= d.text.length) { continue; }
+        if (k.indexOf(d.text, 4) >= 0) { acc = acc.concat(lex[k]); }
+      }
+      if (acc.length) { return { layer: 'text', label: '文本字面量', pairs: acc }; }
+    }
+    // ③ id
+    if (d.idAttr && lex['id:' + d.idAttr]) {
+      return { layer: 'id', label: 'id = ' + d.idAttr, pairs: lex['id:' + d.idAttr] };
+    }
+    // ④ class：取候选最少的那个（最有区分度）。合并所有 class 会让
+    //    "modal modal-wide" 退化成 "modal" 的 15 个候选，反而无法收敛。
+    var cls = d.cls ? d.cls.split(/\s+/) : [], best = null;
+    for (i = 0; i < cls.length; i++) {
+      if (!cls[i]) { continue; }
+      hit = lex['cls:' + cls[i]];
+      if (hit && (!best || hit.length < best.length)) { best = hit; }
+    }
+    if (best) { return { layer: 'class', label: 'class（最有区分度）', pairs: best }; }
+    return null;
+  }
+
+  // 区域 = 元素最近的有 id 的祖先（没有就用 body）。同一个弹窗内的元素共享
+  // 一份投票：子树里每个元素各自主张来源文件，唯一命中算 3 票、多候选算 1 票。
+  var voteCache = null;
+
+  function regionRoot(node) {
+    var cur = node, guard = 0;
+    while (cur && cur.nodeType === 1 && guard++ < 64) {
+      if (cur.id) { return cur; }
+      cur = cur.parentElement;
+    }
+    return document.body;
+  }
+
+  function regionVote(root) {
+    if (!LEXICON || !root) { return null; }
+    if (voteCache && voteCache.root === root) { return voteCache.value; }
+    var tally = {}, lines = {}, best = null, bestN = 0;
+    var all = [root];
+    var kids = root.getElementsByTagName('*');
+    for (var i = 0; i < kids.length && i < 600; i++) { all.push(kids[i]); }
+    for (var j = 0; j < all.length; j++) {
+      var a = lexAnchors(describeLite(all[j]), true);
+      if (!a) { continue; }
+      var w = a.pairs.length === 1 ? 3 : 1;
+      var seen = {};
+      for (var p = 0; p < a.pairs.length; p++) {
+        var f = LEXICON.files[a.pairs[p][0]];
+        if (seen[f]) { continue; }
+        seen[f] = 1;
+        tally[f] = (tally[f] || 0) + w;
+        var lk = f + ':' + a.pairs[p][1];
+        lines[lk] = (lines[lk] || 0) + w;
+      }
+    }
+    for (var f2 in tally) { if (tally[f2] > bestN) { bestN = tally[f2]; best = f2; } }
+    var val = { majority: best, tally: tally, lines: lines };
+    voteCache = { root: root, value: val };
+    return val;
+  }
+
+  function lexResolve(node) {
+    if (!LEXICON) { return null; }
+    var self = lexAnchors(describeLite(node), false);
+    var region = regionVote(regionRoot(node));
+    var maj = region ? region.majority : null;
+
+    // 自身唯一命中：仍要与区域归属对账，否则通用命名会给出错误坐标
+    if (self && self.pairs.length === 1) {
+      var m = lexMeta(self.pairs[0]);
+      if (maj && m.file !== maj) {
+        return { coord: null, origin: 'lexicon', confidence: 'conflict',
+                 own: true, hop: 0,
+                 why: self.label + ' 唯一命中 ' + m.coord + '，但所在区域多数归属于 '
+                      + maj + ' —— 疑为通用命名误命中，未采信',
+                 candidates: [m], region: maj };
+      }
+      m.origin = 'lexicon';
+      m.confidence = self.layer === 'class' ? 'medium' : 'high';
+      m.why = self.label + ' 唯一命中';
+      return m;
+    }
+
+    // 多候选：看区域投票能否把它收敛到唯一一行
+    if (self) {
+      var inMaj = maj ? self.pairs.filter(function (p) {
+        return LEXICON.files[p[0]] === maj;
+      }) : [];
+      if (inMaj.length === 1) {
+        var m2 = lexMeta(inMaj[0]);
+        m2.origin = 'lexicon';
+        m2.confidence = self.layer === 'class' ? 'medium' : 'high';
+        m2.why = self.label + ' 有 ' + self.pairs.length + ' 个候选，区域投票收敛到 ' + maj;
+        return m2;
+      }
+      return { coord: null, origin: 'lexicon', confidence: 'ambiguous',
+               own: true, hop: 0,
+               why: self.label + ' 有 ' + self.pairs.length + ' 个候选，区域投票未能收敛'
+                    + (maj ? '（区域多数 ' + maj + '）' : ''),
+               candidates: self.pairs.map(lexMeta), region: maj };
+    }
+
+    // 自身没有锚点（thead/tr/td 这类纯结构节点）：归到区域，但不给具体行
+    if (maj) {
+      return { coord: null, origin: 'lexicon', confidence: 'region',
+               own: false, hop: 0,
+               why: '自身无锚点，所在区域多数归属于 ' + maj, region: maj };
+    }
+    return null;
+  }
+
   // 元素 -> 源码坐标：生成器只在关键节点上写 data-src，子元素继承最近祖先的
   // 坐标（hop = 相隔层数，0 表示该元素自身带标注）。
   function sourceOf(node) {
@@ -233,7 +428,7 @@
       cur = cur.parentElement;
       hop++;
     }
-    // 无生成器注入时，回落查离线反查表（按 CSS 路径精确匹配，不做猜测）
+    // 无生成器注入时，先查离线反查表（按 CSS 路径精确匹配，不做猜测）
     if (INDEX) {
       var hit = INDEX[elementPath(node)];
       if (hit) {
@@ -242,7 +437,8 @@
                  lineText: hit.line_text };
       }
     }
-    return null;
+    // 静态表没有的（运行时生成的 DOM 大多如此）：改用字面量倒排表当场反查
+    return lexResolve(node);
   }
 
   function describe(node) {
@@ -583,7 +779,7 @@
   bGhost.title = '把浮层变淡并放行鼠标：点击会落到页面元素上（快捷键 `）';
 
   bar.appendChild(grip);
-  bar.appendChild(el('span', 'hint', 'v0.1.0-p9'));
+  bar.appendChild(el('span', 'hint', 'v0.1.0-p10'));
   bar.appendChild(el('div', 'sep'));
   bar.appendChild(el('span', 'hint', '单击选元素 · Ctrl+单击定点 · Shift+拖拽框选'));
   bar.appendChild(el('div', 'sep'));
@@ -1080,6 +1276,7 @@
     state.scroll = { x: window.scrollX, y: window.scrollY };
     state.origBody = orig;
     state.snapBody = snap;
+    voteCache = null;
     orig.parentNode.replaceChild(snap, orig);
     window.scrollTo(state.scroll.x, state.scroll.y);
     resolveNodes(snap);
@@ -1087,6 +1284,7 @@
   }
 
   function exitSnapshot() {
+    voteCache = null;
     if (state.origBody && state.snapBody && state.snapBody.parentNode) {
       state.snapBody.parentNode.replaceChild(state.origBody, state.snapBody);
       window.scrollTo(state.scroll.x, state.scroll.y);
@@ -1389,9 +1587,30 @@
     toggle: toggleSelected,
     commit: commit,
     setGhost: setGhost,
+    // 诊断：倒排表现状（是否注入、多少锚点、是否探到文案字典）
+    lexicon: function () {
+      return {
+        present: !!LEXICON,
+        anchors: LEXICON ? Object.keys(LEXICON.lex).length : 0,
+        files: LEXICON ? LEXICON.files.length : 0,
+        i18nReverse: I18N_REV ? Object.keys(I18N_REV).length : 0
+      };
+    },
+    // 诊断：扫描当前 DOM 的全部可见元素并逐个解析坐标，用于覆盖率对比
+    scan: function (limit) {
+      var out = [], all = document.body.getElementsByTagName('*');
+      var cap = limit || 4000;
+      for (var i = 0; i < all.length && out.length < cap; i++) {
+        var n = all[i];
+        if (isOurNode(n) || !visibleRect(n)) { continue; }
+        var d = describe(n);
+        out.push({ path: d.cssPath, cls: d.cls, id: d.idAttr, text: d.text, src: d.src });
+      }
+      return out;
+    },
     diag: function () {
       var r = {
-        version: '0.1.0-p9',
+        version: '0.1.0-p10',
         active: state.active,
         ghost: state.ghost,
         scrollY: Math.round(window.scrollY),
@@ -1443,6 +1662,6 @@
       }, 420);
       return '测试已发出，420ms 后看控制台';
     },
-    version: '0.1.0-p9'
+    version: '0.1.0-p10'
   };
 })();

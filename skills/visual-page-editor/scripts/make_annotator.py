@@ -16,6 +16,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 DEFAULT_ANNOTATOR = HERE.parent / "assets" / "annotator.js"
 
+sys.dont_write_bytecode = True   # 不在 skill 目录里留 __pycache__（.pyc 会嵌绝对路径）
+sys.path.insert(0, str(HERE))
+import build_lexicon  # noqa: E402  —— 同目录脚本，生成运行时反查表
+
 SELFTEST = r"""
 <script>
 (function(){
@@ -393,6 +397,20 @@ DEMO = r"""
 """
 
 
+def json_for_script(obj) -> str:
+    """内联进 <script> 的 JSON。
+
+    必须把 `</` 转义成 `<\\/`：倒排表里存的是源码字符串字面量，而页面源码
+    本身就经常含 `</script>` —— 不转义会提前闭合标签，把整个注入块劈成
+    语法错误，运行时拿不到任何数据（表现为「注入了但读不到」）。
+    U+2028/2029 在 JS 源码里是换行符，同样要转义。
+    """
+    s = json.dumps(obj, ensure_ascii=False)
+    return (s.replace("</", "<\\/")
+             .replace("\u2028", "\\u2028")
+             .replace("\u2029", "\\u2029"))
+
+
 def probe(html: str) -> dict:
     """页面特征探测：决定副本的已知局限与使用提示。"""
     def n(pat: str) -> int:
@@ -585,26 +603,40 @@ def main() -> int:
 
     feat = probe(html)
 
-    # 坐标来源：页面自带 data-src 最准（生成器自己知道）；否则离线反查兜底
+    # 坐标来源：页面自带 data-src 最准（生成器自己知道）；否则两路并用——
+    # 静态索引管静态页面（一次算好、点选即得），倒排表管运行时反查
+    # （JS 运行时生成的弹窗、列表天然有覆盖，不需要预先遍历状态）
     has_inline_src = 'data-src="' in html
     index: dict = {}
+    lexicon: dict = {}
     sources: list = []
     if not has_inline_src:
-        sources = [Path(s) for s in args.source] or default_sources(src)
-        sources = [s for s in sources if s.is_file() and s.resolve() != src.resolve()]
+        raw = [Path(s) for s in args.source] if args.source else default_sources(src)
+        missing = [str(p) for p in raw if not p.exists()]
+        if missing:
+            print("  [警告] --source 不存在，已跳过: %s" % ", ".join(missing))
+        # 目录会被递归展开（此前传目录是静默跳过，容易被误以为已生效）
+        sources = [s for s in build_lexicon.collect_files([p for p in raw if p.exists()])
+                   if s.resolve() != src.resolve()]
         if sources:
             with tempfile.TemporaryDirectory(prefix="vpe-index-") as td:
                 index, _ = offline_index(src, Path(td) / "index.json", sources)
+            lexicon = build_lexicon.build(sources, build_lexicon.common_root(sources))
+        elif not raw:
+            print("  [警告] 未指定源码且默认集合为空（页面不在源码目录旁）："
+                  "批注将不含源码坐标，请用 --source 指定")
 
     if "</script" in js.lower():
         print("运行时含 </script 字面量，需转义后再内联")
         return 3
 
     idx_js = ("<script>window.__VPE_INDEX__=%s;</script>\n"
-              % json.dumps(index, ensure_ascii=False)) if index else ""
+              % json_for_script(index)) if index else ""
+    lex_js = ("<script>window.__VPE_LEXICON__=%s;</script>\n"
+              % json_for_script(lexicon)) if lexicon.get("lex") else ""
     payload = ("<script>window.__VPE_PAGE__=%s;</script>\n"
-               % json.dumps(page_meta, ensure_ascii=False)
-               + idx_js
+               % json_for_script(page_meta)
+               + idx_js + lex_js
                + "<script>\n" + js + "\n</script>")
     if args.selftest:
         payload += SELFTEST
@@ -637,9 +669,14 @@ def main() -> int:
     print("  页面指纹: sha256 %s…  (%d bytes)" % (page_meta["sha256"][:12], page_meta["bytes"]))
     if has_inline_src:
         print("  坐标来源: 页面自带 data-src（生成器注入，最准）")
-    elif index:
-        print("  坐标来源: 离线反查 %d 个元素（源文件 %d 个）"
-              % (len(index), len(sources)))
+    elif index or lexicon.get("lex"):
+        lex = lexicon.get("lex", {})
+        multi = sum(1 for v in lex.values() if len(v) > 1)
+        print("  坐标来源: 静态索引 %d 个元素 ｜ 运行时反查表 %d 个锚点（源文件 %d 个）"
+              % (len(index), len(lex), len(sources)))
+        if multi:
+            print("    其中 %d 个锚点有多候选：运行时只标 ambiguous 并列候选，"
+                  "由上下文投票决定采信哪一个" % multi)
     else:
         print("  坐标来源: 无 —— 页面无 data-src 且未能反查，批注将不含源码坐标")
     if "generator-sha256" in page_meta:
