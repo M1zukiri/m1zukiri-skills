@@ -106,6 +106,7 @@
     listDragged: false,
     drag: null,
     panelCollapsed: false,
+    ghost: false,
     seq: 1
   };
 
@@ -116,6 +117,40 @@
     if (cls) { n.className = cls; }
     if (text != null) { n.textContent = text; }
     return n;
+  }
+
+  // 浮层拖动。面板会压住待批注的元素，能挪开是基本要求：此前只有候选列表可拖，
+  // 工具栏与两个面板钉死在边缘，目标元素一旦落在它们下面就没法指认。
+  // 定位一律改为 left/top，避免与原来的 right/bottom/translateX 混用。
+  function makeDraggable(node, handle, onStart) {
+    if (!node || !handle) { return; }
+    handle.style.cursor = 'move';
+    if (!handle.title) { handle.title = '按住拖动可移动'; }
+    handle.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) { return; }
+      var t = e.target;
+      if (t !== handle && t.closest && t.closest('button,select,textarea,input,.btn,.x')) { return; }
+      e.stopPropagation(); e.preventDefault();
+      var r = node.getBoundingClientRect();
+      var sx = e.clientX, sy = e.clientY;
+      node.style.transform = 'none';
+      node.style.right = 'auto';
+      node.style.bottom = 'auto';
+      node.style.left = Math.round(r.left) + 'px';
+      node.style.top = Math.round(r.top) + 'px';
+      if (onStart) { onStart(); }
+      function mv(ev) {
+        node.style.left = Math.round(r.left + ev.clientX - sx) + 'px';
+        node.style.top = Math.round(r.top + ev.clientY - sy) + 'px';
+        ev.preventDefault();
+      }
+      function up() {
+        document.removeEventListener('mousemove', mv, true);
+        document.removeEventListener('mouseup', up, true);
+      }
+      document.addEventListener('mousemove', mv, true);
+      document.addEventListener('mouseup', up, true);
+    });
   }
 
   function normText(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
@@ -312,7 +347,10 @@
     '  border-radius:9px;font-size:11px;padding:1px 6px;border:1px solid #fff;z-index:3;',
     '  font-family:Consolas,monospace}',
     '.toast{position:fixed;left:50%;transform:translateX(-50%);top:20px;background:#2b3242;',
-    '  border:1px solid #3a4152;border-radius:8px;padding:8px 15px;z-index:20;text-align:center}'
+    '  border:1px solid #3a4152;border-radius:8px;padding:8px 15px;z-index:20;text-align:center}',
+    '.grip{cursor:move;color:#6b7484;padding:0 3px;user-select:none;-webkit-user-select:none}',
+    '.ghost-back{position:fixed;right:18px;bottom:18px;z-index:30;pointer-events:auto;',
+    '  box-shadow:0 6px 20px rgba(0,0,0,.4)}'
   ].join('\n');
   shadow.appendChild(style);
   document.documentElement.appendChild(host);
@@ -497,6 +535,36 @@
   setInterval(pollScroll, 50);
   window.addEventListener('resize', function () { if (state.active) { repin(); } });
 
+  // ---------------------------------------------------------------- 让路
+
+  // 面板压住待批注元素时，逐个挪开太慢；让路把全部浮层变淡并放行鼠标事件，
+  // 只保留右下角一个恢复入口，点击于是穿透到页面，被盖住的元素也能选中。
+  var ghostBtn = el('button', 'btn pri ghost-back', '\u21A9 恢复浮层');
+  ghostBtn.title = '恢复浮层（快捷键 `）';
+
+  function ghostTargets() {
+    return [bar, panelEl, panel, listBox].filter(Boolean);
+  }
+
+  function ghostApply(n) {
+    if (!n) { return; }
+    n.style.opacity = state.ghost ? '0.1' : '';
+    n.style.pointerEvents = state.ghost ? 'none' : '';
+  }
+
+  function setGhost(on) {
+    state.ghost = !!on;
+    ghostTargets().forEach(ghostApply);
+    if (state.ghost) {
+      if (ghostBtn.parentNode !== ui) { ui.appendChild(ghostBtn); }
+    } else if (ghostBtn.parentNode) {
+      ghostBtn.remove();
+    }
+    if (bGhost) { bGhost.textContent = state.ghost ? '恢复浮层' : '让路'; }
+  }
+
+  ghostBtn.addEventListener('click', function () { setGhost(false); });
+
   // ---------------------------------------------------------------- 入口与工具栏
 
   var fab = el('div', 'fab');
@@ -504,13 +572,18 @@
   fab.appendChild(fabBtn);
 
   var bar = el('div', 'ui bar');
+  var grip = el('span', 'grip', '\u283F');
   var bExpand = el('button', 'btn', '全部展开');
   var bCount = el('span', 'badge', '0');
   var bList = el('button', 'btn', '批注列表');
   var bExport = el('button', 'btn', '导出 JSON');
+  var bGhost = el('button', 'btn', '让路');
   var bExit = el('button', 'btn', '退出');
 
-  bar.appendChild(el('span', 'hint', 'v0.1.0-p8'));
+  bGhost.title = '把浮层变淡并放行鼠标：点击会落到页面元素上（快捷键 `）';
+
+  bar.appendChild(grip);
+  bar.appendChild(el('span', 'hint', 'v0.1.0-p9'));
   bar.appendChild(el('div', 'sep'));
   bar.appendChild(el('span', 'hint', '单击选元素 · Ctrl+单击定点 · Shift+拖拽框选'));
   bar.appendChild(el('div', 'sep'));
@@ -520,6 +593,7 @@
   bar.appendChild(bCount);
   bar.appendChild(bExport);
   bar.appendChild(el('div', 'sep'));
+  bar.appendChild(bGhost);
   bar.appendChild(bExit);
 
   // ---------------------------------------------------------------- 待批注面板
@@ -588,6 +662,8 @@
     });
 
     shadow.appendChild(panelEl);
+    makeDraggable(panelEl, ph);
+    ghostApply(panelEl);
     applyFold();
     renderPanel_();
   }
@@ -754,32 +830,13 @@
     var collapsed = nOther > 0;
 
     var hd = el('div', 'hd');
-    hd.style.cursor = 'move';
     hd.title = '按住拖动可移动列表';
     hd.appendChild(el('span', null, items.length + ' 个可批注目标'));
     hd.appendChild(el('span', null, '拖动此栏移动 · 点钉子收起'));
     listBox.appendChild(hd);
 
-    // 拖动标题栏移动列表，便于避开被遮挡的元素
-    hd.addEventListener('mousedown', function (e) {
-      if (e.button !== 0) { return; }
-      e.stopPropagation(); e.preventDefault();
-      state.listDragged = true;
-      var sx = e.clientX, sy = e.clientY;
-      var ol = parseFloat(listBox.style.left) || 0;
-      var ot = parseFloat(listBox.style.top) || 0;
-      function mv(ev) {
-        listBox.style.left = Math.round(ol + ev.clientX - sx) + 'px';
-        listBox.style.top = Math.round(ot + ev.clientY - sy) + 'px';
-        ev.preventDefault();
-      }
-      function up() {
-        document.removeEventListener('mousemove', mv, true);
-        document.removeEventListener('mouseup', up, true);
-      }
-      document.addEventListener('mousemove', mv, true);
-      document.addEventListener('mouseup', up, true);
-    });
+    // 拖动标题栏移动列表，避开被遮挡的元素；拖过之后不再自动跟随滚动
+    makeDraggable(listBox, hd, function () { state.listDragged = true; });
 
     function renderRows() {
       while (listBox.children.length > 1) { listBox.removeChild(listBox.lastChild); }
@@ -829,6 +886,7 @@
     state.listAnchor = { dx: px + window.scrollX, dy: py + window.scrollY };
     state.listDragged = false;
     shadow.appendChild(listBox);
+    ghostApply(listBox);
     placeList();
   }
 
@@ -870,6 +928,7 @@
     panel.style.maxHeight = '70vh';
 
     var ph = el('div', 'ph');
+    ph.title = '按住拖动可移动';
     ph.appendChild(el('span', null, '批注列表'));
     var sp = el('span', 'sp');
     ph.appendChild(sp);
@@ -883,6 +942,8 @@
     bd.style.flex = '1';
     panel.appendChild(bd);
     shadow.appendChild(panel);
+    makeDraggable(panel, ph);
+    ghostApply(panel);
     renderPanel();
   }
 
@@ -1009,6 +1070,13 @@
     // cloneNode 不复制事件监听：快照内的表单控件一律失效（值还在，拖动无反应），
     // 因此在这里点清数量，进入时如实告知，避免用户以为页面坏了
     stat.controls = snap.querySelectorAll('input, select, textarea, button').length;
+    // disabled 控件在浏览器的命中测试阶段就被丢弃，连 mousedown 都不派发，
+    // 表现为「点不动」而不是「点到了没反应」——空态页面往往大面积命中。
+    // 只在克隆体上解除，原页面不受影响。
+    var dis = snap.querySelectorAll(
+      'input[disabled], select[disabled], textarea[disabled], button[disabled]');
+    stat.disabled = dis.length;
+    Array.prototype.forEach.call(dis, function (n) { n.disabled = false; });
     state.scroll = { x: window.scrollX, y: window.scrollY };
     state.origBody = orig;
     state.snapBody = snap;
@@ -1057,6 +1125,11 @@
       e.stopPropagation(); e.preventDefault();
       return;
     }
+    if (e.key === '`' || e.key === '~') {
+      setGhost(!state.ghost);
+      e.stopPropagation(); e.preventDefault();
+      return;
+    }
     if (listBox) {
       if (e.key === 'ArrowDown') { moveList(1); e.stopPropagation(); e.preventDefault(); return; }
       if (e.key === 'ArrowUp') { moveList(-1); e.stopPropagation(); e.preventDefault(); return; }
@@ -1066,11 +1139,7 @@
   function onMouseDown(e) {
     if (fromHost(e)) { return; }
     if (e.ctrlKey || e.shiftKey || e.button === 1) {
-      if (state.pin) {
-        toast('当前区域已固定，点大头钉结束后可重新选定');
-        e.stopPropagation(); e.preventDefault();
-        return;
-      }
+      if (state.pin) { removePin(); removeRegion(); closeList(); }
       state.drag = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY, shift: e.shiftKey };
       e.stopPropagation(); e.preventDefault();
     }
@@ -1198,11 +1267,9 @@
     if (fromHost(e)) { return; }
     e.stopPropagation(); e.preventDefault();
 
-    // 钉子已固定当前区域：不重开新选择，避免误操作丢失当前上下文
-    if (state.pin) {
-      toast('当前区域已固定，点大头钉结束后可重新选定');
-      return;
-    }
+    // 固定只保护这一次选择不被误点冲掉；在别处点选意味着开始新的选择，
+    // 旧的固定自然结束 —— 否则用户会发现「点第二个没反应」，列表也不刷新
+    if (state.pin) { removePin(); removeRegion(); closeList(); }
 
     var nodes = document.elementsFromPoint ? document.elementsFromPoint(e.clientX, e.clientY) : [];
     if (!nodes.length) { return; }
@@ -1254,11 +1321,13 @@
     if (fab.parentNode) { fab.remove(); }
     ui.appendChild(bar);
     bar.style.display = 'flex';
+    ghostApply(bar);
     buildPanel();
     refreshCount();
     repin();
     toast('批注模式已开启' +
       (stat.total ? '（已移植 ' + stat.transplanted + '/' + stat.total + ' 个 canvas）' : '') +
+      (stat.disabled ? ' · 已解除 ' + stat.disabled + ' 个 disabled 控件（仅副本内）' : '') +
       (stat.controls ? ' ⚠ 内有 ' + stat.controls + ' 个控件已失效：需改参数请先退出，在原生模式下调好再进来'
                      : ''));
   }
@@ -1273,6 +1342,7 @@
     exitSnapshot();
     state.selected = [];
     state.panelCollapsed = false;
+    setGhost(false);
     if (bar.parentNode) { bar.remove(); }
     ui.appendChild(fab);
     toast('已退出，页面已还原');
@@ -1294,6 +1364,8 @@
   }, true);
 
   fabBtn.addEventListener('click', function () { if (!state.active) { enterMode(); } });
+  makeDraggable(bar, grip);
+  bGhost.addEventListener('click', function () { setGhost(!state.ghost); });
   bExit.addEventListener('click', exitMode);
   bExpand.addEventListener('click', function () {
     var ds = document.querySelectorAll('details');
@@ -1316,10 +1388,12 @@
     export: exportJSON,
     toggle: toggleSelected,
     commit: commit,
+    setGhost: setGhost,
     diag: function () {
       var r = {
-        version: '0.1.0-p8',
+        version: '0.1.0-p9',
         active: state.active,
+        ghost: state.ghost,
         scrollY: Math.round(window.scrollY),
         pin: state.pin,
         pinStyleTop: pinEl ? pinEl.style.top : null,
@@ -1369,6 +1443,6 @@
       }, 420);
       return '测试已发出，420ms 后看控制台';
     },
-    version: '0.1.0-p8'
+    version: '0.1.0-p9'
   };
 })();

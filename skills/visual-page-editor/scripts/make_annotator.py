@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -51,12 +52,23 @@ SELFTEST = r"""
         r.fabPresent = !!(host0 && host0.shadowRoot && host0.shadowRoot.querySelector('.fab'));
         r.barBeforeEnter = !!(host0 && host0.shadowRoot && host0.shadowRoot.querySelector('.bar'));
 
+        // 造一个 disabled 控件：浏览器在命中测试阶段就丢弃它，连 mousedown 都不派发。
+        // 副本应只在克隆体上解除它，原页面不受影响。
+        var probeBtn = document.createElement('button');
+        probeBtn.id = 'vpe-probe-disabled';
+        probeBtn.disabled = true;
+        probeBtn.textContent = 'probe';
+        probeBtn.style.cssText = 'position:fixed;left:4px;bottom:4px;width:80px;height:20px';
+        document.body.appendChild(probeBtn);
+
         // 进入批注模式
         window.__VPE__.enter();
         var st = window.__VPE__.state;
         r.active = st.active;
         r.bodyReplaced = (document.body !== before);
         r.origKept = !!st.origBody;
+        var pb = document.getElementById('vpe-probe-disabled');
+        r.disabledProbeCleared = !!pb && pb.disabled === false;
 
         var cs2 = document.querySelectorAll('canvas');
         var cAfter = [];
@@ -84,6 +96,17 @@ SELFTEST = r"""
                    y: Math.round(rr.top + rr.height / 2) };
             break;
           }
+        }
+        if (!pt) {
+          // 应用型页面可能整屏都是 canvas，空态下没有合适的既有元素；
+          // 造一个探针元素，保证「点选 → 候选列表 → 提交 → 框选」这条链路仍被覆盖
+          var probe = document.createElement('div');
+          probe.id = 'vpe-probe-target';
+          probe.textContent = '探针元素';
+          probe.style.cssText = 'position:fixed;left:120px;top:180px;width:220px;height:60px';
+          document.body.appendChild(probe);
+          pt = { x: 200, y: 210 };
+          r.usedProbeTarget = true;
         }
         if (pt) {
           document.dispatchEvent(new MouseEvent('click', {
@@ -135,14 +158,77 @@ SELFTEST = r"""
           var hdEl = host1.shadowRoot.querySelector('.list .hd');
           r.listDraggable = !!hdEl && hdEl.style.cursor === 'move';
 
-          // 钉子在时，再次单击不应改变当前固定区域
+          // 让路：浮层变淡并放行鼠标事件，恢复后还原
+          var barEl = host1.shadowRoot.querySelector('.bar');
+          var barRect = barEl ? barEl.getBoundingClientRect() : null;
+          var bx = barRect ? Math.round(barRect.left + barRect.width / 2) : 0;
+          var by = barRect ? Math.round(barRect.top + barRect.height / 2) : 0;
+          window.__VPE__.setGhost(true);
+          r.ghostOn = window.__VPE__.state.ghost;
+          r.ghostBarPassThrough = !!(barEl && barEl.style.pointerEvents === 'none');
+          r.ghostRestoreBtn = !!host1.shadowRoot.querySelector('.ghost-back');
+          if (barRect) {
+            // elementFromPoint 对 shadow 内容返回宿主元素，故「不再是宿主」即已穿透
+            var hitAfter = document.elementFromPoint(bx, by);
+            r.ghostHitAfter = hitAfter
+              ? hitAfter.tagName.toLowerCase() + (hitAfter.id ? '#' + hitAfter.id : '') : null;
+            r.ghostPassesThrough = !!hitAfter && hitAfter.id !== '__vpe_host';
+          }
+          window.__VPE__.setGhost(false);
+          r.ghostOff = !window.__VPE__.state.ghost &&
+            !!barEl && barEl.style.pointerEvents === '';
+          if (barRect) {
+            var hitBack = document.elementFromPoint(bx, by);
+            r.ghostHitRestored = !!hitBack && hitBack.id === '__vpe_host';
+          }
+
+          // 拖动：工具栏与两个面板此前都钉死在边缘，目标元素落在其下就无法指认
+          (function () {
+            function dragBy(node, handle, dx, dy) {
+              if (!node || !handle) { return null; }
+              var a = node.getBoundingClientRect();
+              handle.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: a.left + 2, clientY: a.top + 2,
+                button: 0, bubbles: true, cancelable: true
+              }));
+              document.dispatchEvent(new MouseEvent('mousemove', {
+                clientX: a.left + 2 + dx, clientY: a.top + 2 + dy,
+                bubbles: true, cancelable: true
+              }));
+              document.dispatchEvent(new MouseEvent('mouseup', {
+                clientX: a.left + 2 + dx, clientY: a.top + 2 + dy,
+                bubbles: true, cancelable: true
+              }));
+              var b = node.getBoundingClientRect();
+              return Math.round(b.left - a.left) + ',' + Math.round(b.top - a.top);
+            }
+            r.dragBar = dragBy(barEl, host1.shadowRoot.querySelector('.bar .grip'), 60, -40);
+            var pnEl = host1.shadowRoot.querySelector('.panel');
+            r.dragPanel = dragBy(pnEl, pnEl && pnEl.querySelector('.ph'), 40, -30);
+
+            var btns = host1.shadowRoot.querySelectorAll('.bar .btn');
+            var bListBtn = null;
+            for (var bi = 0; bi < btns.length; bi++) {
+              if (btns[bi].textContent === '批注列表') { bListBtn = btns[bi]; }
+            }
+            if (bListBtn) {
+              bListBtn.click();
+              var pAll = host1.shadowRoot.querySelectorAll('.panel');
+              var lastP = pAll[pAll.length - 1];
+              r.dragAnnoPanel = dragBy(lastP, lastP && lastP.querySelector('.ph'), 30, -20);
+              bListBtn.click();
+            }
+          })();
+
+          // 钉子在时，在别处单击应开始新的选择，而不是被静默吞掉
           var pinBefore = host1.shadowRoot.querySelector('.pin');
           var pinLeftBefore = pinBefore ? pinBefore.style.left : null;
           document.dispatchEvent(new MouseEvent('click', {
             clientX: pt.x + 40, clientY: pt.y + 40, bubbles: true, cancelable: true
           }));
           var pinAfter = host1.shadowRoot.querySelector('.pin');
-          r.pinUnchangedDuringLock = !!(pinAfter && pinAfter.style.left === pinLeftBefore);
+          r.pinMovedOnNewClick = !!(pinAfter && pinAfter.style.left !== pinLeftBefore);
+          r.listRefreshedOnNewClick = !!host1.shadowRoot.querySelector('.list');
 
           // 点大头钉：收起列表并移除钉子
           var pinNode = host1.shadowRoot.querySelector('.pin');
@@ -248,6 +334,9 @@ SELFTEST = r"""
         window.__VPE__.exit();
         r.restored = (document.body === before);
         r.activeAfterExit = window.__VPE__.state.active;
+        var pb2 = document.getElementById('vpe-probe-disabled');
+        r.disabledProbeRestored = !!pb2 && pb2.disabled === true;
+        if (pb2) { pb2.remove(); }
 
         var host2 = document.getElementById('__vpe_host');
         r.fabBack = !!(host2 && host2.shadowRoot && host2.shadowRoot.querySelector('.fab'));
@@ -374,6 +463,80 @@ def default_sources(src: Path) -> list:
     return out
 
 
+def find_browser() -> str:
+    """本机可用的无头浏览器。"""
+    for p in (r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+              r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"):
+        if Path(p).is_file():
+            return p
+    for n in ("msedge", "chrome", "google-chrome", "chromium"):
+        w = shutil.which(n)
+        if w:
+            return w
+    return ""
+
+
+def run_selftest(out: Path, budget_ms: int = 12000, timeout: int = 180):
+    """驱动无头浏览器跑副本里的自检探针，返回结果字典（失败返回 None）。
+
+    浏览器 profile 会在系统临时目录里展开数百 MB，且每个会话一份、互不复用，
+    因此它是一次性垃圾而不是缓存。这里用 TemporaryDirectory 兜底删除；
+    调用方不要自己去拼 --user-data-dir，否则每验证一次就留下一个几百 MB 的目录。
+    """
+    exe = find_browser()
+    if not exe:
+        print("  [自检] 未找到 Edge/Chrome，已跳过。探针已在副本内，"
+              "可自行用浏览器打开后读取 #VPE_SELFTEST")
+        return None
+    with tempfile.TemporaryDirectory(prefix="vpe-verify-") as td:
+        cmd = [exe, "--headless=new", "--disable-gpu", "--no-sandbox",
+               "--window-size=1600,1100", "--user-data-dir=" + td,
+               "--virtual-time-budget=%d" % budget_ms, "--dump-dom",
+               out.resolve().as_uri()]
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace", timeout=timeout)
+        except (OSError, subprocess.TimeoutExpired) as e:
+            print("  [自检] 浏览器执行失败：%s" % e)
+            return None
+    m = re.search(r"VPE_SELFTEST:(\{.*?\})</div>", proc.stdout or "", re.S)
+    if not m:
+        print("  [自检] 未读到结果：副本未注入探针，或页面脚本自身抛错")
+        return None
+    try:
+        return json.loads(m.group(1))
+    except ValueError as e:
+        print("  [自检] 结果不是合法 JSON：%s" % e)
+        return None
+
+
+def report_selftest(r) -> None:
+    if not r:
+        return
+    errs = [e for e in (r.get("errors") or []) if e]
+    print("  [自检] 运行版本 %s" % r.get("version"))
+    if errs:
+        print("  [自检] ✗ JS 异常：%s" % "; ".join(errs)[:200])
+    checks = [
+        ("进入/退出批注模式", r.get("active") is True and r.get("activeAfterExit") is False),
+        ("快照建立与还原", r.get("restored") is True and r.get("origKept") is True),
+        ("canvas 像素移植", r.get("canvasPreserved") is not False),
+        ("图钉与点击对齐", r.get("pinAligned") is not False),
+        ("点选能展开候选", r.get("listOpened") is True),
+        ("连续点选不被吞", r.get("pinMovedOnNewClick") is not False),
+        ("disabled 控件可点", r.get("disabledProbeCleared") is not False),
+        ("disabled 只改副本", r.get("disabledProbeRestored") is not False),
+        ("让路能穿透", r.get("ghostPassesThrough") is not False),
+        ("让路可还原", r.get("ghostOff") is not False),
+    ]
+    for name, ok in checks:
+        print("    %s %s" % ("✓" if ok else "✗", name))
+    known = {"activeAfterExit", "barBeforeEnter", "listClosedOnCommit"}
+    bad = sorted(k for k, v in r.items() if v is False and k not in known)
+    if bad:
+        print("    其余为 false 的项: %s" % ", ".join(bad))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("src", help="源 HTML")
@@ -381,10 +544,15 @@ def main() -> int:
     ap.add_argument("--annotator", default=str(DEFAULT_ANNOTATOR))
     ap.add_argument("--source", action="append", default=[],
                     help="离线反查用的源码文件（可重复；默认取页面同目录的 .py）")
-    ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--selftest", action="store_true",
+                    help="只注入自检探针，结果需自行用浏览器读取")
+    ap.add_argument("--verify", action="store_true",
+                    help="注入探针并驱动无头浏览器跑一遍，直接打印结论（临时 profile 自动清理）")
     ap.add_argument("--demo", action="store_true",
                     help="注入演示脚本，用于无头截图验证 UI")
     args = ap.parse_args()
+    if args.verify:
+        args.selftest = True
 
     src = Path(args.src)
     if not src.is_file():
@@ -479,6 +647,10 @@ def main() -> int:
               % (page_meta["generator"], page_meta["generator-sha256"][:12]))
     else:
         print("  生成器指纹: 页面未声明（非 generate_page.py 产物，或页面版本过旧）")
+    if args.verify:
+        report_selftest(run_selftest(out))
+    elif args.selftest:
+        print("  自检: 探针已注入，用浏览器打开副本后读取 #VPE_SELFTEST")
     return 0
 
 
