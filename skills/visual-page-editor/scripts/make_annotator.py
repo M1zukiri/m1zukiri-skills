@@ -1,0 +1,486 @@
+# 创建时间: 2026-10-11 20:17:41
+# 用途：把批注运行时内联进目标页面，生成可交互的批注副本（不改动源文件）。
+#   支持 --selftest：注入自动化验证脚本，检查快照建立/还原、canvas 移植、UI 挂载与 JS 异常。
+#   副本为单文件、无外部依赖，可直接以 file:// 打开。
+import argparse
+import hashlib
+import json
+import re
+import subprocess
+import sys
+import tempfile
+from datetime import datetime
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DEFAULT_ANNOTATOR = HERE.parent / "assets" / "annotator.js"
+
+SELFTEST = r"""
+<script>
+(function(){
+  var errors = [];
+  window.addEventListener('error', function(e){ errors.push(String(e.message)); });
+
+  function emit(r){
+    try {
+      document.head.innerHTML = '';
+      document.body.innerHTML = '';
+      var d = document.createElement('div');
+      d.id = 'VPE_SELFTEST';
+      d.textContent = 'VPE_SELFTEST:' + JSON.stringify(r);
+      document.body.appendChild(d);
+    } catch(e){ document.title = 'VPE_SELFTEST_FAIL'; }
+  }
+
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      var r = { errors: errors };
+      try {
+        r.loaded = !!window.__VPE__;
+        r.version = window.__VPE__ ? window.__VPE__.version : null;
+
+        var before = document.body;
+        var cBefore = [];
+        var cs = document.querySelectorAll('canvas');
+        r.canvasCount = cs.length;
+        for (var i = 0; i < cs.length && i < 3; i++) { cBefore.push(cs[i].toDataURL().length); }
+        r.canvasBefore = cBefore;
+
+        var host0 = document.getElementById('__vpe_host');
+        r.hostPresent = !!host0;
+        r.fabPresent = !!(host0 && host0.shadowRoot && host0.shadowRoot.querySelector('.fab'));
+        r.barBeforeEnter = !!(host0 && host0.shadowRoot && host0.shadowRoot.querySelector('.bar'));
+
+        // 进入批注模式
+        window.__VPE__.enter();
+        var st = window.__VPE__.state;
+        r.active = st.active;
+        r.bodyReplaced = (document.body !== before);
+        r.origKept = !!st.origBody;
+
+        var cs2 = document.querySelectorAll('canvas');
+        var cAfter = [];
+        for (var j = 0; j < cs2.length && j < 3; j++) { cAfter.push(cs2[j].toDataURL().length); }
+        r.canvasAfter = cAfter;
+        r.canvasPreserved = (r.canvasBefore.length > 0 &&
+          JSON.stringify(r.canvasBefore) === JSON.stringify(cAfter));
+
+        var host1 = document.getElementById('__vpe_host');
+        r.hostSurvivedSnapshot = !!host1;
+        r.barVisible = !!(host1 && host1.shadowRoot &&
+          host1.shadowRoot.querySelector('.bar') &&
+          host1.shadowRoot.querySelector('.bar').style.display !== 'none');
+
+        // 走一遍真实点选、多选、取消、提交路径
+        var cands = document.querySelectorAll('[id]');
+        var pt = null;
+        for (var k = 0; k < cands.length; k++) {
+          var nd = cands[k];
+          if (nd === host1) { continue; }
+          var rr = nd.getBoundingClientRect();
+          if (rr.width > 40 && rr.height > 12 && rr.top > 60 &&
+              rr.bottom < window.innerHeight - 140 && rr.left >= 0) {
+            pt = { x: Math.round(rr.left + Math.min(rr.width / 2, 180)),
+                   y: Math.round(rr.top + rr.height / 2) };
+            break;
+          }
+        }
+        if (pt) {
+          document.dispatchEvent(new MouseEvent('click', {
+            clientX: pt.x, clientY: pt.y, bubbles: true, cancelable: true
+          }));
+          r.listOpened = !!host1.shadowRoot.querySelector('.list');
+          r.pinShown = !!host1.shadowRoot.querySelector('.pin');
+
+          // 钉子对齐：针尖必须精确落在点击坐标
+          (function () {
+            var pn = host1.shadowRoot.querySelector('.pin');
+            if (!pn) { return; }
+            var pr = pn.getBoundingClientRect();
+            r.pinGlyph = pn.textContent;
+            r.pinW = Math.round(pr.width);
+            r.pinH = Math.round(pr.height);
+            // 针尖位于元素高度的 95% 处（见 .pin 的 translate(-50%,-95%)）
+            r.pinTipX = Math.round(pr.left + pr.width / 2);
+            r.pinTipY = Math.round(pr.top + pr.height * 0.95);
+            r.pinOffsetX = r.pinTipX - pt.x;
+            r.pinOffsetY = r.pinTipY - pt.y;
+            r.pinAligned = (Math.abs(r.pinOffsetX) <= 1 && Math.abs(r.pinOffsetY) <= 1);
+          })();
+
+          var items = window.__VPE__.state.listItems;
+          r.listItemCount = items.length;
+          r.firstItemKind = items[0] ? items[0].kind : null;
+
+          // 选两个元素项（跳过首项的「位置」伪项）
+          if (items.length > 1) { window.__VPE__.toggle(items[1]); }
+          if (items.length > 2) { window.__VPE__.toggle(items[2]); }
+          r.selectedCount = window.__VPE__.state.selected.length;
+          if (items.length > 1) {
+            window.__VPE__.toggle(items[1]);            // 再点应取消
+            r.afterUntoggle = window.__VPE__.state.selected.length;
+            window.__VPE__.toggle(items[1]);            // 加回来
+          }
+
+          // 面板折叠 / 展开
+          var foldBtn = host1.shadowRoot.querySelector('#vpe-fold');
+          if (foldBtn) { foldBtn.click(); }
+          r.panelCollapsed = window.__VPE__.state.panelCollapsed;
+          var selBox = host1.shadowRoot.querySelector('.sel');
+          r.panelBodyHidden = !!(selBox && selBox.style.display === 'none');
+          if (foldBtn) { foldBtn.click(); }
+          r.panelRestored = !window.__VPE__.state.panelCollapsed;
+
+          // 列表标题栏应可拖拽
+          var hdEl = host1.shadowRoot.querySelector('.list .hd');
+          r.listDraggable = !!hdEl && hdEl.style.cursor === 'move';
+
+          // 钉子在时，再次单击不应改变当前固定区域
+          var pinBefore = host1.shadowRoot.querySelector('.pin');
+          var pinLeftBefore = pinBefore ? pinBefore.style.left : null;
+          document.dispatchEvent(new MouseEvent('click', {
+            clientX: pt.x + 40, clientY: pt.y + 40, bubbles: true, cancelable: true
+          }));
+          var pinAfter = host1.shadowRoot.querySelector('.pin');
+          r.pinUnchangedDuringLock = !!(pinAfter && pinAfter.style.left === pinLeftBefore);
+
+          // 点大头钉：收起列表并移除钉子
+          var pinNode = host1.shadowRoot.querySelector('.pin');
+          if (pinNode) {
+            pinNode.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+          }
+          r.listClosedByPin = !host1.shadowRoot.querySelector('.list');
+          r.pinRemovedByPin = !host1.shadowRoot.querySelector('.pin');
+
+          // 解锁后可重新选定
+          document.dispatchEvent(new MouseEvent('click', {
+            clientX: pt.x, clientY: pt.y, bubbles: true, cancelable: true
+          }));
+          r.reopenAfterUnlock = !!host1.shadowRoot.querySelector('.list');
+          r.pinBackAfterUnlock = !!host1.shadowRoot.querySelector('.pin');
+
+          // 滚动诊断 + 跟随验证
+          (function () {
+            r.diag_docScrollH = document.documentElement.scrollHeight;
+            r.diag_bodyScrollH = document.body.scrollHeight;
+            r.diag_innerH = window.innerHeight;
+
+            // 找出页面里真正可滚动的容器（可能是内部 overflow 容器而非 window）
+            var scrollers = [];
+            var all2 = document.querySelectorAll('*');
+            for (var q = 0; q < all2.length && scrollers.length < 5; q++) {
+              var nd2 = all2[q];
+              if (nd2.id === '__vpe_host') { continue; }
+              var cs2 = getComputedStyle(nd2);
+              if ((cs2.overflowY === 'auto' || cs2.overflowY === 'scroll') &&
+                  nd2.scrollHeight > nd2.clientHeight + 30) {
+                scrollers.push(nd2.tagName + (nd2.id ? '#' + nd2.id : '') +
+                  (nd2.className ? '.' + String(nd2.className).split(' ')[0] : '') +
+                  ' sh=' + nd2.scrollHeight + ' ch=' + nd2.clientHeight);
+              }
+            }
+            r.diag_scrollers = scrollers;
+            r.diag_docOverflowY = getComputedStyle(document.documentElement).overflowY;
+            r.diag_bodyOverflowY = getComputedStyle(document.body).overflowY;
+
+            var sy0 = window.scrollY;
+            r.diag_scrollY0 = Math.round(sy0);
+
+            // 先触发一次高亮（模拟悬停列表行），再滚动，才能测出高亮框是否脱节
+            var rows = host1.shadowRoot.querySelectorAll('.list .row');
+            if (rows.length > 1) { rows[1].dispatchEvent(new MouseEvent('mouseenter')); }
+            var hl = host1.shadowRoot.querySelector('.hl');
+            var pn = host1.shadowRoot.querySelector('.pin');
+            var lb = host1.shadowRoot.querySelector('.list');
+            var h0 = hl ? hl.getBoundingClientRect().top : null;
+            var p0 = pn ? pn.getBoundingClientRect().top : null;
+            var l0 = lb ? lb.getBoundingClientRect().top : null;
+
+            window.scrollTo(0, sy0 + 200);
+            window.dispatchEvent(new Event('scroll'));
+            r.diag_scrollY1 = Math.round(window.scrollY);
+            r.diag_windowScrollable = (r.diag_scrollY1 !== r.diag_scrollY0);
+
+            var h1 = hl ? hl.getBoundingClientRect().top : null;
+            var p1 = pn ? pn.getBoundingClientRect().top : null;
+            var l1 = lb ? lb.getBoundingClientRect().top : null;
+
+            r.pinScrollDelta = (p0 !== null && p1 !== null) ? Math.round(p1 - p0) : null;
+            r.listScrollDelta = (l0 !== null && l1 !== null) ? Math.round(l1 - l0) : null;
+            r.hlScrollDelta = (h0 !== null && h1 !== null) ? Math.round(h1 - h0) : null;
+            r.pinFollowsScroll = (r.pinScrollDelta !== null) && Math.abs(r.pinScrollDelta + 200) <= 4;
+            r.listFollowsScroll = (r.listScrollDelta !== null) && Math.abs(r.listScrollDelta + 200) <= 4;
+            r.hlFollowsScroll = (r.hlScrollDelta !== null) && Math.abs(r.hlScrollDelta + 200) <= 6;
+
+            window.scrollTo(0, sy0);
+            window.dispatchEvent(new Event('scroll'));
+          })();
+
+          window.__VPE__.commit('自测批注内容', 'change-text');
+          r.annotationsAfterCommit = window.__VPE__.state.annotations.length;
+          r.selectedCleared = (window.__VPE__.state.selected.length === 0);
+          var pt2 = host1.shadowRoot.querySelector('#vpe-panel-title');
+          r.panelTitle = pt2 ? pt2.textContent : null;
+          r.listClosedOnCommit = !host1.shadowRoot.querySelector('.list') ||
+            host1.shadowRoot.querySelector('.list') === null;
+
+          // 框选：区域预览应与图钉共存，并随图钉一同关闭
+          var pPre = host1.shadowRoot.querySelector('.pin');
+          if (pPre) { pPre.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })); }
+          document.dispatchEvent(new MouseEvent('mousedown', {
+            clientX: 300, clientY: 320, shiftKey: true, bubbles: true, cancelable: true
+          }));
+          document.dispatchEvent(new MouseEvent('mousemove', {
+            clientX: 520, clientY: 470, bubbles: true, cancelable: true
+          }));
+          document.dispatchEvent(new MouseEvent('mouseup', {
+            clientX: 520, clientY: 470, shiftKey: true, bubbles: true, cancelable: true
+          }));
+          r.regionShown = !!host1.shadowRoot.querySelector('.region');
+          r.pinShownAfterDrag = !!host1.shadowRoot.querySelector('.pin');
+          var p2 = host1.shadowRoot.querySelector('.pin');
+          if (p2) { p2.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })); }
+          r.regionClosedWithPin = !host1.shadowRoot.querySelector('.region');
+          r.pinClosedWithPin = !host1.shadowRoot.querySelector('.pin');
+        }
+
+        // 退出
+        window.__VPE__.exit();
+        r.restored = (document.body === before);
+        r.activeAfterExit = window.__VPE__.state.active;
+
+        var host2 = document.getElementById('__vpe_host');
+        r.fabBack = !!(host2 && host2.shadowRoot && host2.shadowRoot.querySelector('.fab'));
+      } catch (e) {
+        r.error = String(e);
+        r.stack = (e.stack || '').split('\n').slice(0, 3).join(' | ');
+      }
+      emit(r);
+    }, 500);
+  });
+})();
+</script>
+"""
+
+
+DEMO = r"""
+<script>
+/* 演示脚本：进入批注模式并在首个合适元素上派发一次点击，用于无头截图验证 UI。 */
+(function(){
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      if (!window.__VPE__) { return; }
+      window.__VPE__.enter();
+      var cands = document.querySelectorAll('[id]');
+      var pt = null;
+      for (var i = 0; i < cands.length; i++) {
+        var n = cands[i];
+        if (n === document.getElementById('__vpe_host')) { continue; }
+        var r = n.getBoundingClientRect();
+        if (r.width > 40 && r.height > 12 && r.top > 60 &&
+            r.bottom < window.innerHeight - 140 && r.left >= 0) {
+          pt = { x: Math.round(r.left + Math.min(r.width / 2, 180)),
+                 y: Math.round(r.top + r.height / 2) };
+          break;
+        }
+      }
+      if (pt) {
+        document.dispatchEvent(new MouseEvent('click', {
+          clientX: pt.x, clientY: pt.y, bubbles: true, cancelable: true
+        }));
+        // 再点一次列表首行，以呈现「已加入待批注」的选中态
+        setTimeout(function () {
+          var h = document.getElementById('__vpe_host');
+          var row = h && h.shadowRoot && h.shadowRoot.querySelector('.row');
+          if (row) {
+            row.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+          }
+        }, 120);
+      }
+    }, 600);
+  });
+})();
+</script>
+"""
+
+
+def probe(html: str) -> dict:
+    """页面特征探测：决定副本的已知局限与使用提示。"""
+    def n(pat: str) -> int:
+        return len(re.findall(pat, html, re.I))
+
+    return {
+        "canvas": n(r"<canvas\b"),
+        "svg": n(r"<svg\b"),
+        "details": n(r"<details\b"),
+        "controls": n(r"<(?:input|select|textarea)\b"),
+        "script": n(r"<script\b"),
+        "elements": n(r"<[a-zA-Z][a-zA-Z0-9-]*[\s/>]"),
+    }
+
+
+def offline_index(src: Path, out_json: Path, sources: list) -> dict:
+    """对没有生成器注入的页面做离线反查：CSS 路径 -> 源码坐标。
+
+    返回 {cssPath: {coord, confidence, why, kind, line_text}}。页面自带
+    data-src 时不需要这一步（生成器知道的比反查准）。
+    """
+    cmd = [sys.executable, str(HERE / "index_elements.py"), str(src), "-o", str(out_json)]
+    for s in sources:
+        cmd += ["--source", str(s)]
+    proc = subprocess.run(cmd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        print("  [警告] 离线反查失败：%s" % (proc.stderr or proc.stdout or "").strip()[:200])
+        return {}, {}
+    data = json.loads(out_json.read_text(encoding="utf-8"))
+
+    index = {}
+    for e in data.get("elements", []):
+        srcs = e.get("src") or []
+        if not srcs:
+            continue
+        s = srcs[0]
+        coord = None
+        if s.get("file") and s.get("line"):
+            coord = "%s:%s" % (s["file"], s["line"])
+        elif s.get("file"):
+            coord = s["file"]
+        index[e["path"]] = {
+            "coord": coord,
+            "confidence": s.get("confidence"),
+            "why": s.get("why"),
+            "kind": s.get("kind"),
+            "line_text": (s.get("line_text") or "")[:120] or None,
+        }
+    return index, data.get("stats", {})
+
+
+def default_sources(src: Path) -> list:
+    """离线反查的默认源码集合：页面同目录 + src/ 子目录。
+
+    单文件可视化页通常由「组装脚本 + 模板 + 前端逻辑」拼成（如
+    build_page.py + src/page_template.html + src/app.js），只喂组装脚本会
+    漏掉页面的绝大部分字面量。
+    """
+    exts = (".py", ".js", ".mjs", ".ts", ".html", ".htm")
+    out = []
+    for d in (src.parent, src.parent / "src"):
+        if not d.is_dir():
+            continue
+        for p in sorted(d.iterdir()):
+            if p.is_file() and p.suffix.lower() in exts and p.resolve() != src.resolve():
+                out.append(p)
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("src", help="源 HTML")
+    ap.add_argument("out", nargs="?", help="输出副本（默认 <src>.annotate.html）")
+    ap.add_argument("--annotator", default=str(DEFAULT_ANNOTATOR))
+    ap.add_argument("--source", action="append", default=[],
+                    help="离线反查用的源码文件（可重复；默认取页面同目录的 .py）")
+    ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--demo", action="store_true",
+                    help="注入演示脚本，用于无头截图验证 UI")
+    args = ap.parse_args()
+
+    src = Path(args.src)
+    if not src.is_file():
+        print("源文件不存在: %s" % src)
+        return 2
+
+    ann_path = Path(args.annotator)
+    if not ann_path.is_file():
+        print("运行时不存在: %s" % ann_path)
+        return 2
+
+    out = Path(args.out) if args.out else src.with_suffix(".annotate.html")
+
+    raw = src.read_bytes()
+    html = raw.decode("utf-8", errors="replace")
+    js = ann_path.read_text(encoding="utf-8")
+
+    # 页面指纹：副本是独立文件、浏览器无法回溯原文件，所以由副本生成器
+    # 算出源页面哈希，连同页面自报的生成器指纹一起交给运行时。
+    page_meta = {
+        "path": str(src.resolve()),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "bytes": len(raw),
+        "annotatedAt": datetime.now().isoformat(timespec="seconds"),
+    }
+    for key in ("generator", "generator-sha256", "generator-bytes"):
+        m = re.search(r'<meta name="vpe-%s" content="([^"]*)"' % re.escape(key), html)
+        if m:
+            page_meta[key] = m.group(1)
+
+    feat = probe(html)
+
+    # 坐标来源：页面自带 data-src 最准（生成器自己知道）；否则离线反查兜底
+    has_inline_src = 'data-src="' in html
+    index: dict = {}
+    sources: list = []
+    if not has_inline_src:
+        sources = [Path(s) for s in args.source] or default_sources(src)
+        sources = [s for s in sources if s.is_file() and s.resolve() != src.resolve()]
+        if sources:
+            with tempfile.TemporaryDirectory(prefix="vpe-index-") as td:
+                index, _ = offline_index(src, Path(td) / "index.json", sources)
+
+    if "</script" in js.lower():
+        print("运行时含 </script 字面量，需转义后再内联")
+        return 3
+
+    idx_js = ("<script>window.__VPE_INDEX__=%s;</script>\n"
+              % json.dumps(index, ensure_ascii=False)) if index else ""
+    payload = ("<script>window.__VPE_PAGE__=%s;</script>\n"
+               % json.dumps(page_meta, ensure_ascii=False)
+               + idx_js
+               + "<script>\n" + js + "\n</script>")
+    if args.selftest:
+        payload += SELFTEST
+    if args.demo:
+        payload += DEMO
+
+    if "</body>" in html:
+        html = html.replace("</body>", payload + "</body>", 1)
+    else:
+        html = html + payload
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        out.write_text(html, encoding="utf-8")
+    except PermissionError:
+        # 目标常因正被浏览器打开而锁定；改写为同名 .new 副本，避免整个流程失败
+        alt = out.with_name(out.stem + ".new" + out.suffix)
+        alt.write_text(html, encoding="utf-8")
+        print("目标被占用（可能正被浏览器打开），已改写到: %s" % alt)
+        out = alt
+    print("副本已生成: %s (%.2f MB)" % (out, out.stat().st_size / 1048576))
+    print("  页面特征: canvas %(canvas)d · svg %(svg)d · details %(details)d · "
+          "控件 %(controls)d · script %(script)d · 元素约 %(elements)d" % feat)
+    if feat["canvas"]:
+        print("  [提示] 含 %d 个 canvas：像素在进入批注时移植；图形若依赖参数，"
+              "请先在原生模式调好参数再进入" % feat["canvas"])
+    if feat["controls"]:
+        print("  [提示] 含 %d 个交互控件：快照内控件不可交互（值保留、拖动无效），"
+              "请在进入批注前把参数调到位" % feat["controls"])
+    print("  页面指纹: sha256 %s…  (%d bytes)" % (page_meta["sha256"][:12], page_meta["bytes"]))
+    if has_inline_src:
+        print("  坐标来源: 页面自带 data-src（生成器注入，最准）")
+    elif index:
+        print("  坐标来源: 离线反查 %d 个元素（源文件 %d 个）"
+              % (len(index), len(sources)))
+    else:
+        print("  坐标来源: 无 —— 页面无 data-src 且未能反查，批注将不含源码坐标")
+    if "generator-sha256" in page_meta:
+        print("  生成器指纹: %s sha256 %s…"
+              % (page_meta["generator"], page_meta["generator-sha256"][:12]))
+    else:
+        print("  生成器指纹: 页面未声明（非 generate_page.py 产物，或页面版本过旧）")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
