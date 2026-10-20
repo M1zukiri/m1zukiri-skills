@@ -1,10 +1,19 @@
-﻿# 外部 Skills 清单（本机已安装）
+# 外部 Skills 清单（本机已安装）
 
-> 本清单汇总本机（~/.dsh/skills，143 个）中**从网络/外部下载安装**的 skills，标注名称、用途与安装地址（来源仓库）。每个分组内的 skill 安装方式：git clone <URL> 后复制对应 skill 目录到技能目录，或使用各仓库文档说明的安装命令。
+> 本清单汇总本机已安装的外部 skills（`~/.dsh/skills` 146 个、`~/.omp/skills` 141 个中**从网络/外部下载安装**的部分），标注名称、用途与安装地址（来源仓库）。
+
+> **本仓库不保存外部 skill 的源文件**，只维护本清单。安装方式统一为：按「安装地址」git clone 或下载后，
+> 把对应 skill 目录复制到目标 Agent 的技能目录；环境识别、路径映射与兼容性检查见
+> `m1zukiri-profiles-md/docs/agent-install.md`（该仓库已私有，本机路径 `~/Desktop/个人/m1zukiri-profiles-md`）。
 
 > 自建/原创 skills 见仓库 skills/ 目录（[README.md](README.md)）。
 
 > 共 143 个外部 skill。更新日期：2026-09-06，基于本地 SKILL.md 元数据与上游仓库逐一核对。
+
+> **2026-10-20 变更**：以下 10 个技能此前以源文件形式镜像在 `agent-bootstrap` 仓库，该仓库已 archive。
+> 现统一改为按本清单安装、任何仓库都不保存源文件：`docx`、`pdf`、`pptx`、`xlsx`、`skill-creator`、
+> `frontend-design`、`grill-me`、`neat-freak`、`storage-analyzer`、`pua`。本机已安装副本在
+> `~/.dsh/skills` 与 `~/.omp/skills`，不受 archive 影响；需要重新安装时按上表地址取上游版本。
 
 ## Anthropic 官方 (anthropics/skills)
 
