@@ -1,74 +1,82 @@
-# AGENTS.md
+# AGENTS.md · m1zukiri-skills
 
-本文件是 m1zukiri-skills 仓库的维护指引，供 Agent 在本仓库内工作时读取。
-Agent 的全局行为规范在 `m1zukiri-profiles-md/global/AGENTS.md`（`agents/AGENTS.md` 只是指向它的指针），
-本仓库不再作为行为规范的同步源。
+<!-- profile
+repo: M1zukiri/m1zukiri-profiles-md
+modes: -
+stacks: -
+platforms: windows
+domains: -
+contexts: -
+-->
 
-## 仓库定位
+个人 skill 与 Agent 环境配置的公开仓库：自建 skills、外部 skills 登记清单、Agent 配置模板。
+仓库无全局构建与测试，改动主体是 Markdown / YAML / JSON 模板。
 
-个人 skill 仓库（公开，GitHub: M1zukiri/m1zukiri-skills），收录三件事：
+**行为规范不在本仓库**：唯一权威是 `m1zukiri-profiles-md/global/AGENTS.md`（本仓库
+`agents/AGENTS.md` 已改为指向它的指针）。本文件只记仓库维护规则。
 
-- **自建 skills**：`skills/`，原创内容，本仓库唯一允许镜像进仓库的 skill 来源
-- **外部 skills 清单**：`EXTERNAL_SKILLS.md`，只登记不镜像
-- **Agent 配置模板**：`agents/config/`，配置模板的同步源；行为规范已迁至 `m1zukiri-profiles-md`
+## 开工前必读
 
-仓库无全局构建与测试；改动主体是 Markdown、YAML、JSON 模板，个别 skill 自带辅助脚本（如 `scripts/`），仅限 skill 目录内使用。
+| profile | 什么时候必须读 |
+| --- | --- |
+| `platforms/windows` | 改 `agents/config/` 模板、含路径或编码要求的配置前 |
 
-## 目录结构
+`modes` / `stacks` / `domains` / `contexts` 均为 `-`：没有代码、没有构建，三种活动模式都不成立。
 
-```
-m1zukiri-skills/
-├── skills/                  # 自建（原创）skills，目录名即 skill 名
-│   ├── rhizome/             # 轻量搜索纪律
-│   ├── colorful-palette/    # 配色知识库（含 references/ 数据文件）
-│   └── gbt7714-citation/    # GB/T 7714 参考文献著录（含 scripts/ 辅助脚本）
-├── EXTERNAL_SKILLS.md       # 外部 skills 清单：名称/用途/安装地址/许可证，按来源分组
-├── agents/                  # Agent 环境文档与配置模板
-│   ├── AGENTS.md            # 指针文件，指向 m1zukiri-profiles-md 的 global/AGENTS.md
-│   └── config/
-│       ├── config.yml              # OMP 代理配置
-│       └── settings.template.json  # 模板（仅占位符，不含真实路径）
-├── README.md
-└── .gitignore               # 防泄漏规则
-```
+## 仓库定位与目录
 
-## 维护规则
+| 路径 | 作用 | 规则 |
+| --- | --- | --- |
+| `skills/` | 自建（原创）skills，目录名即 skill 名 | 唯一允许镜像进仓库的 skill 来源 |
+| `EXTERNAL_SKILLS.md` | 外部 skills 清单 | 只登记不镜像 |
+| `agents/AGENTS.md` | 全局行为规范指针 | 不要往这里写行为规范 |
+| `agents/config/config.yml` | OMP 代理配置模板 | 不含凭据 |
+| `agents/config/settings.template.json` | 配置模板 | 仅占位符，不含真实路径 |
+| `README.md` | 使用说明与自建 skills 表 | 增删 skill 时同步 |
 
-### 自建 skill（skills/）
+当前自建 skills：`rhizome`（搜索纪律）、`colorful-palette`（含 `references/` 数据）、
+`gbt7714-citation`（含 `scripts/`）、`visual-page-editor`（含 `assets/`、`references/`、`scripts/`）。
 
-- 一个目录一个 skill，目录名即 skill 名，kebab-case 小写英文。
-- 必须包含 `SKILL.md`，YAML frontmatter 至少含：
-  - `name`：与目录名一致
-  - `description`：含触发词，说明何时使用，以及何时**不**应触发（如 rhizome 明确要求只在用户点名时加载）
-  - 可选 `compatibility`（rhizome 的示例：“需要 web 搜索能力”）
-- 数据、参考文件与辅助脚本放在 skill 目录内的子目录（如 `references/`、`evals/`、`scripts/`），不进仓库根目录。
-- 新增或修改 skill 后，同步更新 `README.md` 的「自建 skills」表。
+## 自建 skill 规范
 
-### 外部 skills 清单（EXTERNAL_SKILLS.md）
+- 一目录一 skill，目录名即 skill 名，kebab-case 小写英文。
+- 必须含 `SKILL.md`，frontmatter 至少两个字段：
+  - `name`：与目录名一致。
+  - `description`：含触发词，并说明**何时不应触发**（如 rhizome 要求只在用户点名时加载）。
+  - 可选 `compatibility`（示例：「需要 web 搜索能力」）。
+- 数据、参考文件与辅助脚本放在 skill 目录内的子目录（`references/`、`evals/`、`scripts/`、
+  `assets/`），不进仓库根目录。
+- 新增或修改 skill 后同步更新 `README.md` 的「自建 skills」表。
 
-- 只登记，不镜像：外部 skill 本体及其文件不进本仓库，只记录名称、用途、安装地址、许可证。
-- 按来源分组，每组一张表，列为：Skill 名称 / 用途描述 / 安装地址 / 许可证。
-- 头部维护本机安装统计与更新日期；增减条目时同步更新。
+## 外部 skill 清单规范
 
-### Agent 环境文档（agents/）
+- **只登记，不镜像**：外部 skill 本体及其文件不进本仓库，只记名称、用途、安装地址、许可证。
+- 按来源分组，每组一张表；头部维护本机安装统计与更新日期，增减条目时同步更新。
 
-- `agents/AGENTS.md` 是**指针**（2026-10-20 起）：全局行为规范的唯一权威在 `m1zukiri-profiles-md`
-  仓库的 `global/AGENTS.md`，本机三处副本与它逐字节一致。本仓库不再维护行为规范。
-- `agents/config/` 只允许模板与脱敏配置；`settings.template.json` 必须保留 `shellPath` 占位符，真实 `settings.json` 永不入库。
+## 配置同步
 
-### 安全红线（公开仓库）
+- **行为规范**：以 `m1zukiri-profiles-md/global/AGENTS.md` 为唯一权威。更新后提交推送，
+  同时覆盖本机三处副本（`~/.dsh`、`~/.codex`、`~/.omp/agent`），三处必须逐字节一致。
+- **自建 skills 与工具配置模板**：同步集在本仓库 `skills/` 与 `agents/config/`。
+- `agents/config/` 只允许模板与脱敏配置；`settings.template.json` 必须保留 `shellPath`
+  占位符，真实 `settings.json` 永不入库。
+- 新增敏感文件类型时，**先补 `.gitignore` 再 `git add`**（`git add` 前检查 `.gitignore` 是
+  global 的要求，先补后加是本仓库的执行顺序）。
 
-提交前逐文件检查，以下内容一律不得出现：
+## 项目特有的坑
 
-- 凭据：`auth.json`、`config.toml`、真实 `settings.json`、`*.key`、`*.pem`、`*.token`、`.env`
-- 含用户名或环境信息的真实文件系统路径
-- 代理凭据、内部网络地址、任何在公开仓库暴露会造成损害的机密
+- **同步集曾有三处互相矛盾的说法**（2026-10-20）：旧仓库 `agent-bootstrap` 声明同步集含
+  `install.sh` / `install.ps1` / `extensions`，本仓库声明 `agents/`，profiles 仓库声明
+  `global/`。裁定后：行为规范看 profiles 仓库，skills 与工具配置看本仓库。旧仓库的处置记在
+  `NOTES.md` 待决，不要在本文件里写死。
+- **`settings.template.json` 是模板不是配置**：往里写真实路径或 key，会被同步到所有 Agent
+  环境，且下一次复制会把真实值带回来。
+- **`agents/config/` 与 `agent-bootstrap/config/` 有同名同哈希副本**：迁移已开始、旧副本未删；
+  改配置模板只改本仓库这一份，旧副本会误导人。
 
-`.gitignore` 已覆盖上述类别；新增敏感文件类型时，先补 `.gitignore` 再 `git add`。
+## 其他文档
 
-### Git 约定
-
-- 默认分支 `main`。
-- Commit 信息用英文，conventional commits 风格（`docs:`、`feat:`、`fix:`、`chore:` 等）。
-- 提交信息描述交付结果，不写中间过程。
-- 用户明确指示后才推送；不执行 `git push --force` 或其他破坏性操作。
+| 文档 | 读取时机 |
+| --- | --- |
+| `NOTES.md` | 待决事项与同步集历史结论 |
+| `agents/AGENTS.md` | 指针文件，不必读 |
