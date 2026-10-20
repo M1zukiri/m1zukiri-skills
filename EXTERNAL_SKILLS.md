@@ -4,7 +4,8 @@
 
 > **本仓库不保存外部 skill 的源文件**，只维护本清单。安装方式统一为：按「安装地址」git clone 或下载后，
 > 把对应 skill 目录复制到目标 Agent 的技能目录；环境识别、路径映射与兼容性检查见
-> `m1zukiri-profiles-md/docs/agent-install.md`（该仓库已私有，本机路径 `~/Desktop/个人/m1zukiri-profiles-md`）。
+> `m1zukiri-profiles-md/docs/agent-install.md`（该仓库已私有；本机克隆在 `%PROFILES_HOME%`，
+> 当前指向 `C:\repos\m1zukiri-profiles-md`）。
 
 > 自建/原创 skills 见仓库 skills/ 目录（[README.md](README.md)）。
 
