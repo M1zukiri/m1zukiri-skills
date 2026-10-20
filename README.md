@@ -12,8 +12,8 @@ m1zukiri-skills/
 │   ├── gbt7714-citation/    # GB/T 7714—2025 参考文献著录（中英文，全文献类型）
 │   └── visual-page-editor/  # 页面元素批注 → 源码坐标回指
 ├── EXTERNAL_SKILLS.md       # 外部下载 skills 清单：名称 / 用途 / 安装地址（按来源分组）
-├── agents/                  # 其他 Agents 的环境文档与配置模板
-│   ├── AGENTS.md            # 全局行为规范（9 节，多 Agent 统一）
+├── agents/                  # Agent 配置模板（行为规范已迁出）
+│   ├── AGENTS.md            # 指针：行为规范的权威在 m1zukiri-profiles-md
 │   └── config/
 │       ├── config.yml               # OMP 代理配置（主题/TUI/压缩等）
 │       └── settings.template.json   # 模板（shellPath 占位，需手动填写）

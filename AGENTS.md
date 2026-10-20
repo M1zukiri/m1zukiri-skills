@@ -1,7 +1,8 @@
 # AGENTS.md
 
 本文件是 m1zukiri-skills 仓库的维护指引，供 Agent 在本仓库内工作时读取。
-Agent 的行为规范（如何思考、如何改代码、如何提交）见 `agents/AGENTS.md`，本仓库为其公开同步源。
+Agent 的全局行为规范在 `m1zukiri-profiles-md/global/AGENTS.md`（`agents/AGENTS.md` 只是指向它的指针），
+本仓库不再作为行为规范的同步源。
 
 ## 仓库定位
 
@@ -9,7 +10,7 @@ Agent 的行为规范（如何思考、如何改代码、如何提交）见 `age
 
 - **自建 skills**：`skills/`，原创内容，本仓库唯一允许镜像进仓库的 skill 来源
 - **外部 skills 清单**：`EXTERNAL_SKILLS.md`，只登记不镜像
-- **Agent 环境文档与配置模板**：`agents/`，所有 Agent 环境规范与配置的同步源
+- **Agent 配置模板**：`agents/config/`，配置模板的同步源；行为规范已迁至 `m1zukiri-profiles-md`
 
 仓库无全局构建与测试；改动主体是 Markdown、YAML、JSON 模板，个别 skill 自带辅助脚本（如 `scripts/`），仅限 skill 目录内使用。
 
@@ -23,7 +24,7 @@ m1zukiri-skills/
 │   └── gbt7714-citation/    # GB/T 7714 参考文献著录（含 scripts/ 辅助脚本）
 ├── EXTERNAL_SKILLS.md       # 外部 skills 清单：名称/用途/安装地址/许可证，按来源分组
 ├── agents/                  # Agent 环境文档与配置模板
-│   ├── AGENTS.md            # 全局行为规范（9 节），同步至本机所有 Agent 环境
+│   ├── AGENTS.md            # 指针文件，指向 m1zukiri-profiles-md 的 global/AGENTS.md
 │   └── config/
 │       ├── config.yml              # OMP 代理配置
 │       └── settings.template.json  # 模板（仅占位符，不含真实路径）
@@ -51,9 +52,8 @@ m1zukiri-skills/
 
 ### Agent 环境文档（agents/）
 
-- `agents/AGENTS.md` 是全局行为规范的同步源。修改后：
-  1. 提交并推送
-  2. 立即覆盖本机各 Agent 环境副本（`~/.dsh`、`~/.codex`、`~/.omp/agent`）
+- `agents/AGENTS.md` 是**指针**（2026-10-20 起）：全局行为规范的唯一权威在 `m1zukiri-profiles-md`
+  仓库的 `global/AGENTS.md`，本机三处副本与它逐字节一致。本仓库不再维护行为规范。
 - `agents/config/` 只允许模板与脱敏配置；`settings.template.json` 必须保留 `shellPath` 占位符，真实 `settings.json` 永不入库。
 
 ### 安全红线（公开仓库）
