@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- 创建时间: 2026-10-22 15:00:00 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课件批注工作台</title>
+<link rel="stylesheet" href="/web/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="/web/app.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <button id="toc-toggle" class="icon-btn" title="目录（可收起）">☰</button>
+      <span class="brand-mark">∑</span>
+      <span class="brand-name">课件批注工作台</span>
+      <span class="brand-sub hidden"></span>
+    </div>
+    <nav id="chapter-tabs" class="chapter-tabs" aria-label="章节"></nav>
+    <div class="top-actions">
+      <div class="search-box">
+        <input id="search-input" type="search" placeholder="搜索课件文字（/）" autocomplete="off" spellcheck="false">
+        <div id="search-results" class="search-results hidden"></div>
+      </div>
+      <button id="annot-toggle" class="btn" title="批注模式（Alt+A）"><span class="btn-dot"></span>批注</button>
+      <button id="ask-copy" class="btn" title="复制提醒，粘贴到对话窗口交给 AI">复制提问<span id="pending-count" class="badge hidden">0</span></button>
+      <button id="export-notes" class="btn" title="导出全部批注与解答为 Markdown">导出笔记</button>
+      <button id="notes-toggle" class="icon-btn only-narrow" title="批注面板">✎</button>
+    </div>
+  </header>
+
+  <main class="layout" id="layout">
+    <aside id="toc" class="sidebar-left" aria-label="目录">
+      <div class="sidebar-head"><span>目录</span><span id="toc-meta" class="muted"></span></div>
+      <ol id="toc-list" class="toc-list"></ol>
+    </aside>
+
+    <section id="reader" class="reader" tabindex="0" aria-label="课件正文">
+      <div id="reader-inner" class="reader-inner"></div>
+    </section>
+
+    <aside id="notes" class="sidebar-right" aria-label="批注与解答">
+      <div class="sidebar-head">
+        <span>批注与解答</span>
+        <button id="notes-close" class="icon-btn only-narrow" title="收起">×</button>
+      </div>
+      <div class="notes-filters" id="notes-filters">
+        <button data-filter="all" class="chip on">全部</button>
+        <button data-filter="open" class="chip">待回答</button>
+        <button data-filter="answered" class="chip">已回答</button>
+        <button data-filter="resolved" class="chip">已解决</button>
+        <label class="scope"><input type="checkbox" id="scope-current"> 仅本章</label>
+      </div>
+      <div id="notes-list" class="notes-list"></div>
+    </aside>
+  </main>
+
+  <div id="page-pill" class="page-pill">1 / 1</div>
+  <div class="zoom-ctl">
+    <button id="zoom-out" title="缩小">−</button>
+    <button id="zoom-val" title="点击恢复 90%">90%</button>
+    <button id="zoom-in" title="放大">＋</button>
+  </div>
+
+  <div id="annot-popover" class="popover hidden" role="dialog" aria-label="新建批注"></div>
+  <div id="toast" class="toast hidden"></div>
+  <div id="loading" class="loading">正在加载课件…</div>
+</div>
+<script src="/web/vendor/marked/marked.umd.js"></script>
+<script src="/web/vendor/katex/katex.min.js"></script>
+<script src="/web/vendor/katex/auto-render.min.js"></script>
+<script src="/web/app.js"></script>
+</body>
+</html>

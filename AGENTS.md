@@ -35,7 +35,8 @@ contexts: -
 | `README.md` | 使用说明与自建 skills 表 | 增删 skill 时同步 |
 
 当前自建 skills：`rhizome`（搜索纪律）、`colorful-palette`（含 `references/` 数据）、
-`gbt7714-citation`（含 `scripts/`）、`visual-page-editor`（含 `assets/`、`references/`、`scripts/`）。
+`gbt7714-citation`（含 `scripts/`）、`visual-page-editor`（含 `assets/`、`references/`、`scripts/`）、
+`courseware-annotator`（含 `assets/`、`references/`、`scripts/`）。
 
 ## 自建 skill 规范
 

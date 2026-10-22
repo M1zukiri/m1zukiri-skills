@@ -2,15 +2,27 @@
 
 > 路线、进度、当前状态与待决事项。每完成一个可验证节点追加一次。
 
-## 当前状态（2026-10-20）
+## 当前状态（2026-10-22）
 
 - 已完成：`AGENTS.md` 改为纯仓库维护规则 + 声明块；`agents/AGENTS.md` 已改为指向
   `m1zukiri-profiles-md/global/AGENTS.md` 的指针（提交 `18ca0db`）。
+- 新增 `skills/courseware-annotator/`（2026-10-22）：课件 PDF → 可批注工作台 → 按坐标问答，
+  5 个脚本 + 离线前端 + 参考文档；已在临时工作台跑通「建批注 → 裁剪图复核 → 写解答 → 自动刷新」。
 - 进行中：`skills/visual-page-editor/` 有未提交改动（5 个修改 + 1 个新增脚本）——不是本轮
   产生的，保持未暂存。
 - 未开始：旧同步集清单的归档处置（待用户授权）。
 
 ## 进度记录
+
+### 2026-10-22
+
+- 新增 `skills/courseware-annotator/`：把「课件 PDF → 可批注工作台 → agent 按坐标问答」固化为 skill。
+  入口 `create_workbench.py` 一键建工作台并构建；`build/serve/review/selftest` 各司其职；
+  前端（KaTeX + marked）随 skill 分发，离线可用。
+- 验证：用 CH1/CH2 两个 PDF（149 页，150 dpi）在临时目录建工作台 33s；浏览器建批注、
+  `review --crops` 出局部图 + 红框整页图、`--set` 写解答后页面 2s 内自动刷新；
+  `selftest_workbench.py` 全 PASS；`--text-only` 重建 1s。
+- 同步：README 自建 skills 表与 AGENTS 当前清单已更新。
 
 ### 2026-10-20
 

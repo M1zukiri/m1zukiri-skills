@@ -28,6 +28,7 @@ m1zukiri-skills/
 | [colorful-palette](skills/colorful-palette/) | 基于《配色设计速查手册》（红糖美学著）的配色知识库：7 大色系、162 类意象配色、52 类大自然配色、20 种流行风格，共 1583 个配色方案（CMYK + RGB 取自书中印刷色号，HEX 为派生值） |
 | [gbt7714-citation](skills/gbt7714-citation/) | 按 GB/T 7714—2025《信息与文献 参考文献著录规则》生成、格式化、核对中英文参考文献条目，覆盖期刊/图书/学位论文/会议/标准/专利/报告/网页等全部文献类型，并可将 2015 版旧格式升级为 2025 版 |
 | [visual-page-editor](skills/visual-page-editor/) | 让用户在任意 HTML 页面上点选元素、添加批注与修改意见，并把每条批注对应回源码位置（文件 + 行号），供 agent 直接改源码；自动识别页面产生方式（生成器注入 `data-src` / 离线反查），对含 canvas 的页面移植像素以保证批注时图形非空白。配套三个脚本：`make_annotator.py`（生成批注副本）、`index_elements.py`（离线反查坐标）、`build_lexicon.py`（字面量词典） |
+| [courseware-annotator](skills/courseware-annotator/) | 把课件 PDF 变成本机可批注的阅读工作台：页面上点选行/公式块/框选区域写问题，批注存「页码 + 归一化坐标」；用户把「复制提问」发进对话后，agent 按坐标从 300 dpi 页图裁剪复核（文字层丢公式信息也不影响定位），再把解答写回、页面自动刷新。配套 5 个脚本（创建 / 构建 / 服务 / 阅卷 / 自检）与离线前端（KaTeX + marked） |
 
 ## 外部 skills
 
