@@ -9,7 +9,7 @@ description: >
   courseware workbench、PDF 批注工作台。不用于：只想改 HTML 页面的元素（用
   visual-page-editor）；只要课件摘要/笔记而不需要批注交互；没有 PDF/PPT 源文件；或只是
   问一个公式（直接看图回答更快）。
-version: 1.0.0
+version: 1.0.1
 ---
 
 # courseware-annotator（课件 → 可批注工作台 → 指着问）
@@ -119,6 +119,7 @@ python <工作台>/scripts/review_workbench.py --root <工作台> --set <批注i
 - **文字层公式乱序**：正常现象；定位靠坐标 + 页图，不靠 quote。
 - **矩阵/多行公式**：单行点击只框到一角；让用户 `Shift+拖拽` 框选，或点浮层里的「公式块」候选。
 - **端口占用**：`serve_workbench.py --port 8800`；`启动工作台.bat` 已处理「已在运行则直接开页面」。
+- **双击 .bat 后端口无服务**：启动脚本必须是 CRLF 换行（UTF-8 + `chcp 65001` 下 LF 会让 cmd 解析错位）；重新用 `create_workbench.py` 生成，或按 `references/workbench.md` 排查表重写。
 - **页面没有新功能**：前端 JS 会缓存，`Ctrl+R` 刷新一次。
 - **服务重启后**：批注与解答在磁盘上不会丢，用同一工作台目录重启即可。
 - **PPTX**：先转 PDF；若转成「一页一图」没有文字层，仍可批注，只是搜索退化。

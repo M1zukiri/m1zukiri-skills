@@ -1,0 +1,2 @@
+# cmd 解析 UTF-8 批处理时依赖 CRLF，LF 会导致命令错位
+*.bat text eol=crlf

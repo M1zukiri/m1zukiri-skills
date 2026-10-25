@@ -174,6 +174,7 @@ fontspec 是全文唯一的（只出现在首次使用页），解析时必须�
 | 解答写回不显示 | 确认写的是 `<工作台>/data/answers.json`、key 与批注 id 一致；等 2 秒 |
 | 公式显示成红字/原文 | 该条答案的 `$...$` 不配对，或命令 KaTeX 不支持；`throwOnError:false` 会显示原文 |
 | 端口被占 | `serve_workbench.py --port 8800` |
+| 双击 `启动工作台.bat` 后窗口一闪、端口无服务，报 `'nul' 不是内部或外部命令` 或 `'行，直接打开页面?' 不是内部或外部命令` | 启动脚本被存成了 LF 换行：cmd 在 UTF-8 + `chcp 65001` 下按字节定位行，LF 会让后续命令错位。用 CRLF 重写（`create_workbench.py` 已强制写入 CRLF，skill 内的 `*.bat` 由 `.gitattributes` 固定为 `eol=crlf`） |
 | 页面样式/脚本没更新 | 前端走 `no-cache`，但仍需 `Ctrl+R` 刷新已打开的旧标签 |
 | 页图模糊 | `--dpi 400` 重建；清晰度与体积权衡 |
 | 文字层公式乱 | 预期行为；以 `--crops` 生成的页图为准 |

@@ -160,7 +160,9 @@ def main() -> None:
               .replace("{{CHAPTERS}}", chapter_list)
               .replace("{{OUT}}", str(out)))
     (out / "README.md").write_text(readme, encoding="utf-8")
-    shutil.copy2(ASSETS / "launcher.bat", out / "启动工作台.bat")
+    launcher = (ASSETS / "launcher.bat").read_text(encoding="utf-8")
+    (out / "启动工作台.bat").write_bytes(
+        launcher.replace("\n", "\r\n").encode("utf-8"))
 
     print(f"工作台已创建：{out}")
     print(f"  项目：{project_title}（{len(chapters)} 章，{args.dpi} dpi）")

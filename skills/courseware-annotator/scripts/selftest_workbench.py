@@ -83,6 +83,11 @@ def main() -> None:
                 "scripts/build_workbench.py", "scripts/serve_workbench.py",
                 "scripts/review_workbench.py"):
         check(f"文件存在 {rel}", (root / rel).exists())
+    launcher = root / "启动工作台.bat"
+    if launcher.exists():
+        raw = launcher.read_bytes()
+        lone_lf = raw.count(b"\n") - raw.count(b"\r\n")
+        check("启动脚本为 CRLF", lone_lf == 0, f"{lone_lf} 个 LF 换行" if lone_lf else "")
     manifest = {}
     try:
         manifest = json.loads((root / "data/manifest.json").read_text(encoding="utf-8"))
