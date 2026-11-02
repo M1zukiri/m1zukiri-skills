@@ -2,17 +2,34 @@
 
 > 路线、进度、当前状态与待决事项。每完成一个可验证节点追加一次。
 
-## 当前状态（2026-10-22）
+## 当前状态（2026-11-02）
 
 - 已完成：`AGENTS.md` 改为纯仓库维护规则 + 声明块；`agents/AGENTS.md` 已改为指向
   `m1zukiri-profiles-md/global/AGENTS.md` 的指针（提交 `18ca0db`）。
 - 新增 `skills/courseware-annotator/`（2026-10-22）：课件 PDF → 可批注工作台 → 按坐标问答，
   5 个脚本 + 离线前端 + 参考文档；已在临时工作台跑通「建批注 → 裁剪图复核 → 写解答 → 自动刷新」。
+- 新增 `skills/meeting-transcript-correction/`（2026-11-02）：会议录音转写校正流程，含用户
+  指定的转写修改准则、证据分级、三份产出模板、裁图脚本与一致性自检脚本；已同步到
+  `~/.dsh/skills/` 与 `~/.omp/skills/`。
 - 进行中：`skills/visual-page-editor/` 有未提交改动（5 个修改 + 1 个新增脚本）——不是本轮
   产生的，保持未暂存。
 - 未开始：旧同步集清单的归档处置（待用户授权）。
 
 ## 进度记录
+
+### 2026-11-02
+
+- 新增 `skills/meeting-transcript-correction/`：把「会议录音转写 + 现场照片 + 公开资料」的校正
+  流程固化成 skill。SKILL.md 保留用户指定的转写修改准则（只改脱节/断裂/明显错误，可保留
+  不确定与低价值缺失；修改须满足发音、语法、图片、权威来源、用户指定之一），并补充最小编辑、
+  不新增信息、说话人口误不改、幻灯片≠口播、逐条留痕、独立复核等必要条款。
+- 结构：`references/rules.md`（判定树、证据等级 E1–E6、错误分类、反例）、
+  `references/output-templates.md`（校正版/校正说明/幻灯片原文模板）、
+  `scripts/crop_slides.py`（幕布裁剪放大）、`scripts/check_corrections.py`（断链/表格/置信度自检）、
+  `evals/evals.json`（3 条触发与边界用例）。
+- 验证：两个脚本在本机 ACP 2026 记录上跑通（裁剪 1 张、33 行置信度统计 高 18/中 14/低 1，
+  断链 0）；负例能报出断链、表格列数不一致、「高置信度但证据存疑」。
+- 同步：仓库 `skills/`、`~/.dsh/skills/`、`~/.omp/skills/` 三份，内容一致；README 自建 skills 表已补。
 
 ### 2026-10-22
 

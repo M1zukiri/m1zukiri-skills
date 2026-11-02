@@ -36,7 +36,8 @@ contexts: -
 
 当前自建 skills：`rhizome`（搜索纪律）、`colorful-palette`（含 `references/` 数据）、
 `gbt7714-citation`（含 `scripts/`）、`visual-page-editor`（含 `assets/`、`references/`、`scripts/`）、
-`courseware-annotator`（含 `assets/`、`references/`、`scripts/`）。
+`courseware-annotator`（含 `assets/`、`references/`、`scripts/`）、`meeting-transcript-correction`
+（含 `references/`、`scripts/`、`evals/`）。
 
 ## 自建 skill 规范
 
