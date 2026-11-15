@@ -139,6 +139,18 @@ python scripts/alasctl.py stop --force  # 立刻杀
 与 WebUI 共存：WebUI 可以开着当看板，但**不要在 WebUI 里点启动**，
 否则两个实例会抢同一个 ADB 设备。`start` 会自动检测并拒绝。
 
+## 操作记录制度
+
+目标是**渐进式替代**：需要人工介入时由我执行，并把场景记下来，逐步转成自动流程。
+
+- 每次执行完人工操作，在 `references/operations.md` 追加或更新一条记录。
+- 记录固定四要素：**触发信号**（怎么知道要动手）、**判断**（ALAS 为何不自愈）、
+  **做法**（可复现的命令序列）、**验证**（成功后的可观测状态）。
+- 同类场景复现时不要新开编号：把「复现次数」加一，并把新观察到的变体补进「判断」。
+- 「能否自动化」要写清缺什么（例如「缺弹窗模板匹配」），不要写「待实现」。
+- 回看规则：`能否自动化=是` 且复现次数 ≥ 3 的记录，应升级为 `alaswatch` 的判定规则
+  或 `alasctl` 的新子命令，然后从「人工操作」降级为「自动流程」。
+
 ## 硬性禁止
 
 - `adb kill-server` / `connect` / `disconnect`：会打断 ALAS 的 MaaTouch 持久连接。
@@ -154,4 +166,5 @@ python scripts/alasctl.py stop --force  # 立刻杀
 | `references/task-catalog.md` | 要知道 58 个任务的职责、优先级、锁定约束 |
 | `references/config-rules.md` | 要改设置项，需要字段语义与取值来源 |
 | `references/failure-playbook.md` | 状态是 `STUCK` / `NEEDS_HUMAN`，要对照处置 |
+| `references/operations.md` | 要执行人工操作，或要回看已积累的操作场景 |
 | `references/game-knowledge.md` | 要做活动取舍、队伍编排、资源规划等 L4 决策 |

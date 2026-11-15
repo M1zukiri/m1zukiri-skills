@@ -22,6 +22,7 @@ python scripts/alasctl.py log --lines 100
 | `GameTooManyClickError: ... BATTLE_PREPARATION` | 反复点战斗准备无响应 | 检查是否处于特殊活动机制；等自愈后观察 |
 | `GameTooManyClickError: ... MAP_SWIPE_*` | 地图滑动异常 | 多为偶发；反复出现则换图或检查 `UseAutoSearch` |
 | `An error has occurred in Azur Lane game client` | 游戏客户端自身报错 | ALAS 无法处理，需人工重启游戏/模拟器 |
+| `Game page unknown` + `Starting from current page is not supported` | 启动时游戏停在 ALAS 不认识的界面，ALAS 会直接退出 | 见 `operations.md` 的 OP-001：截图确认卡在哪个弹窗，关掉再启动 |
 | `Fleet composition error` | 舰队编成不符合要求 | 改 `<Task>.Fleet` 配置，或换一张不限制编成的图 |
 | `OpsiCrossMonth` / 月度重置提示 | 大世界跨月，行动力与海域重置 | 正常流程，确认 `OpsiExplore` 在月初会跑 |
 | `CRITICAL ... Request human takeover` | ALAS 放弃自动化 | 一律停止自动重启，读 `state/alert.json` 后人工判断 |
