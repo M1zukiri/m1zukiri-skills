@@ -10,7 +10,8 @@ m1zukiri-skills/
 │   ├── rhizome/             # 轻量搜索纪律
 │   ├── colorful-palette/    # 《配色设计速查手册》配色知识库（7 色系 / 1583 方案）
 │   ├── gbt7714-citation/    # GB/T 7714—2025 参考文献著录（中英文，全文献类型）
-│   └── visual-page-editor/  # 页面元素批注 → 源码坐标回指
+│   ├── visual-page-editor/  # 页面元素批注 → 源码坐标回指
+│   └── alas-ctrl/           # 碧蓝航线 ALAS 脚本的控制与监控层
 ├── EXTERNAL_SKILLS.md       # 外部下载 skills 清单：名称 / 用途 / 安装地址（按来源分组）
 ├── agents/                  # Agent 配置模板（行为规范已迁出）
 │   ├── AGENTS.md            # 指针：行为规范的权威在 m1zukiri-profiles-md
@@ -30,6 +31,7 @@ m1zukiri-skills/
 | [visual-page-editor](skills/visual-page-editor/) | 让用户在任意 HTML 页面上点选元素、添加批注与修改意见，并把每条批注对应回源码位置（文件 + 行号），供 agent 直接改源码；自动识别页面产生方式（生成器注入 `data-src` / 离线反查），对含 canvas 的页面移植像素以保证批注时图形非空白。配套三个脚本：`make_annotator.py`（生成批注副本）、`index_elements.py`（离线反查坐标）、`build_lexicon.py`（字面量词典） |
 | [courseware-annotator](skills/courseware-annotator/) | 把课件 PDF 变成本机可批注的阅读工作台：页面上点选行/公式块/框选区域写问题，批注存「页码 + 归一化坐标」；用户把「复制提问」发进对话后，agent 按坐标从 300 dpi 页图裁剪复核（文字层丢公式信息也不影响定位），再把解答写回、页面自动刷新。配套 5 个脚本（创建 / 构建 / 服务 / 阅卷 / 自检）与离线前端（KaTeX + marked） |
 | [meeting-transcript-correction](skills/meeting-transcript-correction/) | 会议录音转写校正：用现场 PPT/白板照片、上下文与学校/机构/论文/标准等公开来源，找出可确认的听写错误、缺失与矛盾，产出「校正版 + 校正说明 + 幻灯片原文」。默认学术资产模式（经权威来源确认后可直接改正原文错误，保留原词与依据），也可切到逐字保真模式；内含证据分级、产出模板、裁图脚本与一致性自检脚本 |
+| [alas-ctrl](skills/alas-ctrl/) | 碧蓝航线自动化脚本 ALAS 的控制与监控层：查状态、启停调度器、调任务开关与时间、改运营设置、诊断卡死与人工接管、跑看门狗自愈。不改 ALAS 源码，只依赖配置与日志；一切能由 ALAS 完成的玩法都通过改任务配置驱动，不自行点屏幕。含授权分级（读/进程/调度/设置/资源）与状态机（RUNNING/WAITING/STUCK/NEEDS_HUMAN/DOWN/CONFLICT） |
 
 ## 外部 skills
 

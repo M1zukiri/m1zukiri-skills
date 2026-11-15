@@ -2,7 +2,7 @@
 
 > 路线、进度、当前状态与待决事项。每完成一个可验证节点追加一次。
 
-## 当前状态（2026-11-02）
+## 当前状态（2026-11-16）
 
 - 已完成：`AGENTS.md` 改为纯仓库维护规则 + 声明块；`agents/AGENTS.md` 已改为指向
   `m1zukiri-profiles-md/global/AGENTS.md` 的指针（提交 `18ca0db`）。
@@ -11,11 +11,37 @@
 - 新增 `skills/meeting-transcript-correction/`（2026-11-02）：会议录音转写校正流程，含用户
   指定的转写修改准则、证据分级、三份产出模板、裁图脚本与一致性自检脚本；已同步到
   `~/.dsh/skills/` 与 `~/.omp/skills/`。
-- 进行中：`skills/visual-page-editor/` 有未提交改动（5 个修改 + 1 个新增脚本）——不是本轮
-  产生的，保持未暂存。
+- 新增 `skills/alas-ctrl/`（2026-11-16）：碧蓝航线 ALAS 的控制与监控层，`alasctl.py` 十一类子命令
+  + `alaswatch.py` 看门狗 + 四份 references；`selftest.py` 20 项全通过，真实启停已在
+  `emulator-5554` 上跑通。
+- 未开始：`alas-ctrl` 的 L2/L4 决策自动化（当前只提供配置能力与知识文档，不含自动编排）；
+  `alas-ctrl` 同步到 `~/.dsh/skills/`（待本轮收尾）。
 - 未开始：旧同步集清单的归档处置（待用户授权）。
 
 ## 进度记录
+
+### 2026-11-16
+
+- 新增 `skills/alas-ctrl/`：把「用 ALAS 自动处理碧蓝航线全部事务」固化为 skill。
+  定位是 ALAS 之上的控制与监控层，不替代 ALAS、不改其源码。
+  - `scripts/alasctl.py`：`doctor` / `status` / `tasks` / `log` / `errors` / `cfg get|set` /
+    `task on|off|now|at|in` / `start` / `stop` / `perm` / `watch`。
+  - `scripts/alaswatch.py`：看门狗，按状态机自愈（DOWN 自动拉起、STUCK 宽限 10 分钟、
+    NEEDS_HUMAN 停止重启并写告警）。
+  - `scripts/_logparse.py`：把折行日志还原成逻辑行后判定 6 种状态。
+  - `scripts/_auth.py`：手机应用式授权（read / process / schedule / settings / resource）。
+  - `scripts/selftest.py`：20 项自测，覆盖状态机 7 种场景、折行还原、安全点、时长解析、
+    NextRun 上限、授权默认值。
+- 关键事实（只读核对得出，写入 references 供后续复用）：
+  - WebUI 是 PyWebIO，只有 `GET /` 与 WebSocket `/`，**没有 REST**，因此不逆向它。
+  - 调度完全由 `config/alas.json` 的 `Scheduler.Enable` / `NextRun` 驱动；改文件后被
+    mtime 轮询热重载（空闲 5s、任务中在战斗结算点）。
+  - 日志必须锁定 `_alas.txt`：`_gui.txt` 是 WebUI 主进程、`_-c.txt` 是 WebUI 子进程，
+    后者会打印 `Pending tasks` 造成误判。
+  - `args.json` 的 `type` / `display` 可预判哪些字段写了会被 ALAS 强制覆盖，
+    比「写完回读文件」可靠——回读文件看不到 ALAS 侧的规范化。
+- 验证：`selftest.py` 全通过；在真实环境跑通 `start` → 日志出现 `Start task` → `stop` 找安全点；
+  改配置测试后 `config/alas.json` 按 SHA256 校验字节还原。
 
 ### 2026-11-02
 

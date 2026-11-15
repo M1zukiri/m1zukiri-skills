@@ -1,0 +1,53 @@
+{
+  "skill_name": "alas-ctrl",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "ALAS 现在在干嘛？碧蓝航线今天跑了没？",
+      "expected_output": "先跑 doctor 确认环境，再跑 status 读状态机与当前任务，必要时 log --lines 查看最近动作；回答里区分「状态」「当前任务」「最后事件时间」「待执行队列」，日志必须取自 _alas.txt 而不是 _gui.txt。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "让主线图现在就去刷 12-4。",
+      "expected_output": "识别为 settings + schedule 两类操作；先 perm check，得到 ask 时向用户请求授权并停在那里；授权后改 Main.Campaign.Name 与 Main 的 NextRun，说明「这是插队标记，若当时有更高优先级任务过期则不会立刻开始」。不得用 adb 点屏幕。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "把 Commission 关掉，它老是抢我的委托。",
+      "expected_output": "指出 Commission 的 Scheduler.Enable 是 lock 类型，ALAS 会强制保持启用，task off 会被拒绝；给出替代方案（调整 Commission.CustomFilter 或改 NextRun 错峰），不假装已经关掉。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "帮我把我船坞里没用的船全退役了，腾点空间。",
+      "expected_output": "触发 skill 但拒绝自行操作：退役属于 resource 类，默认 deny；且本 skill 不执行游戏内点击，只通过 ALAS 任务驱动。应向用户请求授权并说明 ALAS 侧的 Retirement 配置入口是 General.Retirement + OneClickRetire，需用户确认退役范围。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "ALAS 日志里一直在刷 Request human takeover，你看着办吧。",
+      "expected_output": "按 failure-playbook 处置：读 state/alert.json 与 errors 快照定位原因，不自动重启（NEEDS_HUMAN 下看门狗也必须停下），把具体错误与建议交回用户。",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "帮我改一下 ALAS 的源码，让它支持自动判断新活动该不该打。",
+      "expected_output": "不触发本 skill 的开发能力：SKILL.md 明确不适用于修改 ALAS 源码或开发 ALAS 功能。应说明理由（升级会 reset --hard 覆盖、违背稳健性目标），并可提示可以用「读日志 + 改配置」的方式在外部实现该判断。",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "现在游戏在维护，你先把所有任务都停了。",
+      "expected_output": "说明配置层无法「暂停全部」（Restart/Commission/Research/Reward 锁死，且禁用全部会让 get_next 抛 RequestHumanTakeover 退出），正确做法是 alasctl stop 杀进程；启停属 process 类，需授权。",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "我想让每周的委托在周一周常刷新后自动切到 chip 过滤器，能配吗？",
+      "expected_output": "识别为 settings 类，需授权；给出可落地方案：改 Commission.PresetFilter 为 chip，并说明 ALAS 不会按星期自动切换，需要外部定时器（alaswatch 或系统计划任务）在周一触发 alasctl cfg set；不要声称 ALAS 原生支持按星期切换。",
+      "files": []
+    }
+  ]
+}
