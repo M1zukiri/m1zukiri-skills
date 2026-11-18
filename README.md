@@ -32,6 +32,7 @@ m1zukiri-skills/
 | [courseware-annotator](skills/courseware-annotator/) | 把课件 PDF 变成本机可批注的阅读工作台：页面上点选行/公式块/框选区域写问题，批注存「页码 + 归一化坐标」；用户把「复制提问」发进对话后，agent 按坐标从 300 dpi 页图裁剪复核（文字层丢公式信息也不影响定位），再把解答写回、页面自动刷新。配套 5 个脚本（创建 / 构建 / 服务 / 阅卷 / 自检）与离线前端（KaTeX + marked） |
 | [meeting-transcript-correction](skills/meeting-transcript-correction/) | 会议录音转写校正：用现场 PPT/白板照片、上下文与学校/机构/论文/标准等公开来源，找出可确认的听写错误、缺失与矛盾，产出「校正版 + 校正说明 + 幻灯片原文」。默认学术资产模式（经权威来源确认后可直接改正原文错误，保留原词与依据），也可切到逐字保真模式；内含证据分级、产出模板、裁图脚本与一致性自检脚本 |
 | [alas-ctrl](skills/alas-ctrl/) | 碧蓝航线自动化脚本 ALAS 的控制与监控层：查状态、启停调度器、调任务开关与时间、改运营设置、诊断卡死与人工接管、跑看门狗自愈。不改 ALAS 源码，只依赖配置与日志；一切能由 ALAS 完成的玩法都通过改任务配置驱动，不自行点屏幕。含授权分级（读/进程/调度/设置/资源）与状态机（RUNNING/WAITING/STUCK/NEEDS_HUMAN/DOWN/CONFLICT） |
+| [conversation-import-to-dsh](skills/conversation-import-to-dsh/) | 把其他 Agent 应用的历史对话（WorkBuddy / CodeBuddy 系，及任何有本地事件流的 agent）重建为原生 DSH 会话：可读、可续聊、出现在 GUI 列表。含判断来源完整性（网页分享链接只留最近约 100 轮且首轮被截断，完整历史只在本机事件流）、生成 Session v4 文件、校验、安装入账的 7 个脚本；专治导入后 `at least one tool must have defer_loading=false` 与 `system/message requires a protected first surface head` 两个坑 |
 
 ## 外部 skills
 

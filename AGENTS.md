@@ -38,7 +38,7 @@ contexts: -
 `gbt7714-citation`（含 `scripts/`）、`visual-page-editor`（含 `assets/`、`references/`、`scripts/`）、
 `courseware-annotator`（含 `assets/`、`references/`、`scripts/`）、`meeting-transcript-correction`
 （含 `references/`、`scripts/`、`evals/`）、`alas-ctrl`（含 `references/`、`scripts/`、`evals/`，
-运行时状态写 `state/`，已 gitignore）。
+运行时状态写 `state/`，已 gitignore）、`conversation-import-to-dsh`（含 `references/`、`scripts/`）。
 
 ## 自建 skill 规范
 
