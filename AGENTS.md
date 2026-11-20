@@ -60,8 +60,9 @@ contexts: -
 
 ## 配置同步
 
-- **行为规范**：以 `m1zukiri-profiles-md/global/AGENTS.md` 为唯一权威。更新后提交推送，
-  同时覆盖本机三处副本（`~/.dsh`、`~/.codex`、`~/.omp/agent`），三处必须逐字节一致。
+- **行为规范**：以本仓库 `agents/AGENTS.md` 为唯一权威。更新后提交推送，再跑 `agents/sync.ps1`
+  分发到本机副本（`~/.dsh`、`~/.omp/agent`），逐字节一致。`m1zukiri-profiles-md` 的
+  `global/AGENTS.md` 不是权威、内容已分叉，不要从它同步。
 - **自建 skills 与工具配置模板**：同步集在本仓库 `skills/` 与 `agents/config/`。
 - `agents/config/` 只允许模板与脱敏配置；`settings.template.json` 必须保留 `shellPath`
   占位符，真实 `settings.json` 永不入库。

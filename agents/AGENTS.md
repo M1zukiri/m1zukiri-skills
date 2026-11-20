@@ -150,7 +150,7 @@
 
 **公开仓库同步：绝不写入机密。**
 
-本机 Agent 配置通过公开 GitHub 仓库统一同步：`https://github.com/M1zukiri/m1zukiri-skills`（仓库 `agents/` 目录）。该仓库同时服务 Codex（分发至 `~/.codex/AGENTS.md`）与 OMP（分发至 `~/.omp/agent/AGENTS.md`）。
+本机 Agent 配置通过公开 GitHub 仓库统一同步：`https://github.com/M1zukiri/m1zukiri-skills`（仓库 `agents/` 目录）。分发由 `agents/sync.ps1` 完成，目标为 `~/.dsh/AGENTS.md` 与 `~/.omp/agent/AGENTS.md`；`~/.codex` 目前不纳入分发。
 
 编辑属于此同步集的配置文件时，**绝对禁止**写入：
 - API key、token 或任何密码
@@ -162,7 +162,7 @@
 
 **绝不纳入同步集**：`auth.json`、`config.toml`、真实 `settings.json` 及任何含凭据的文件。提交前逐文件检查以上规则。
 
-- `AGENTS.md` 更新后需立即同步：提交并推送到远端仓库，同时覆盖本机各 Agent 环境副本（`~/.dsh`、`~/.codex`、`~/.omp/agent`）。
+- `AGENTS.md` 更新后需立即同步：提交并推送到远端仓库，同时用 `agents/sync.ps1` 覆盖本机副本（`~/.dsh`、`~/.omp/agent`）。
 
 **工具配置：不擅自修改。**
 
