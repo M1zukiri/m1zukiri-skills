@@ -1,7 +1,6 @@
 # AGENTS.md · m1zukiri-skills
 
 <!-- profile
-repo: M1zukiri/m1zukiri-profiles-md
 modes: -
 stacks: -
 platforms: windows
