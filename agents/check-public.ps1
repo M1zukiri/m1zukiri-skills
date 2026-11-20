@@ -1,4 +1,4 @@
-# 创建时间: 2026-11-20 13:12:08
+﻿# 创建时间: 2026-11-20 13:12:08
 # 用途: 扫描 agents/ 公开区是否写入了本机敏感信息。命中即失败（退出码 1）。
 # 范围: agents/ 下除 local/ 之外的全部文件。
 #       skills/ 不扫描——那是既有内容，公开前已人工复核；本脚本只守新增的规范区。
@@ -17,7 +17,7 @@ $userPath = '[A-Za-z]:\\Users\\[^\\\s"'']+'
 $ipv4 = '\b(?!127\.)(?!0\.)(?!255\.)(\d{1,3}\.){3}\d{1,3}\b'
 
 $targets = Get-ChildItem $agentsRoot -Recurse -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch '\\local\\' -and $_.Extension -in '.md', '.json', '.yml', '.yaml', '.ps1', '.py' }
+    Where-Object { $_.FullName.Substring($agentsRoot.Length) -notmatch '^\\local\\' -and $_.Extension -in '.md', '.json', '.yml', '.yaml', '.ps1', '.py' }
 
 $hits = 0
 foreach ($f in $targets) {
