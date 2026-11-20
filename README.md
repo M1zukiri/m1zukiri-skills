@@ -11,10 +11,14 @@ m1zukiri-skills/
 │   ├── colorful-palette/    # 《配色设计速查手册》配色知识库（7 色系 / 1583 方案）
 │   ├── gbt7714-citation/    # GB/T 7714—2025 参考文献著录（中英文，全文献类型）
 │   ├── visual-page-editor/  # 页面元素批注 → 源码坐标回指
-│   └── alas-ctrl/           # 碧蓝航线 ALAS 脚本的控制与监控层
+│   ├── alas-ctrl/           # 碧蓝航线 ALAS 脚本的控制与监控层
+│   └── agents-profile/      # profiles 知识库 → 项目 AGENTS.md 的内联与审计
 ├── EXTERNAL_SKILLS.md       # 外部下载 skills 清单：名称 / 用途 / 安装地址（按来源分组）
-├── agents/                  # Agent 配置模板（行为规范已迁出）
-│   ├── AGENTS.md            # 指针：行为规范的权威在 m1zukiri-profiles-md
+├── agents/                  # Agent 行为规范与知识库
+│   ├── AGENTS.md            # 全局行为规范正文（分发源，由 sync.ps1 同步到各 Agent 环境）
+│   ├── profiles/            # 跨项目知识库（platforms / stacks），不参与自动加载
+│   ├── check-public.ps1     # 公开前敏感信息扫描
+│   ├── sync.ps1             # 分发全局规范 + 项目内联检查
 │   └── config/
 │       ├── config.yml               # OMP 代理配置（主题/TUI/压缩等）
 │       └── settings.template.json   # 模板（shellPath 占位，需手动填写）
@@ -33,6 +37,7 @@ m1zukiri-skills/
 | [meeting-transcript-correction](skills/meeting-transcript-correction/) | 会议录音转写校正：用现场 PPT/白板照片、上下文与学校/机构/论文/标准等公开来源，找出可确认的听写错误、缺失与矛盾，产出「校正版 + 校正说明 + 幻灯片原文」。默认学术资产模式（经权威来源确认后可直接改正原文错误，保留原词与依据），也可切到逐字保真模式；内含证据分级、产出模板、裁图脚本与一致性自检脚本 |
 | [alas-ctrl](skills/alas-ctrl/) | 碧蓝航线自动化脚本 ALAS 的控制与监控层：查状态、启停调度器、调任务开关与时间、改运营设置、诊断卡死与人工接管、跑看门狗自愈。不改 ALAS 源码，只依赖配置与日志；一切能由 ALAS 完成的玩法都通过改任务配置驱动，不自行点屏幕。含授权分级（读/进程/调度/设置/资源）与状态机（RUNNING/WAITING/STUCK/NEEDS_HUMAN/DOWN/CONFLICT） |
 | [conversation-import-to-dsh](skills/conversation-import-to-dsh/) | 把其他 Agent 应用的历史对话（WorkBuddy / CodeBuddy 系，及任何有本地事件流的 agent）重建为原生 DSH 会话：可读、可续聊、出现在 GUI 列表。含判断来源完整性（网页分享链接只留最近约 100 轮且首轮被截断，完整历史只在本机事件流）、生成 Session v4 文件、校验、安装入账的 7 个脚本；专治导入后 `at least one tool must have defer_loading=false` 与 `system/message requires a protected first surface head` 两个坑 |
+| [agents-profile](skills/agents-profile/) | 把 `agents/profiles/` 下的跨项目知识内联进项目 `AGENTS.md`。profiles 不会被任何 Agent 自动加载，只有内联后才进入上下文；内联区带来源与内容哈希，可幂等重跑、可检测过期。审计环节强制交给 subagent 只读执行，产出 proposal 由人审阅后再机械写入 |
 
 ## 外部 skills
 

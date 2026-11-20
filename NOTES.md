@@ -105,3 +105,32 @@
   32 行，前者是更新版；内容并入 global 后降级为指针。
 - 2026-10-20：确认本仓库无代码、无构建、无测试，三种活动模式都不成立，故 `modes` 声明为 `-`；
   `platforms: windows` 只因为配置模板面向 Windows 环境。
+
+## 待观察：agents/profile 机制的止损条件
+
+2026-11-20 引入 `agents/profiles/` + `agents-profile` skill。该设计有可证伪的退出条件：
+
+- 试点（`E:\Sync\handmaid`）完成后 2 周内，若新增内联 > 3 处且 `check` 报告过 ≥ 1 次真实过期
+  → 机制在运转，继续推广。
+- 若一次都没跑过 → 说明它只是又一层「声明了但没人用」的抽象，应退回纯单体：
+  保留全局 `AGENTS.md` 与各项目文件，删除 `profiles/` 与 skill。
+
+此条仅为提示，不触发任何自动动作。到期由人判断。
+
+### 2026-11-20 agents/profile 机制落地
+
+- `agents/AGENTS.md` 从 879 B 指针恢复为 12983 B 全局规范正文；`agents/sync.ps1` 分发到
+  `~/.dsh`、`~/.omp/agent` 并校验逐字节一致；`agents/check-public.ps1` 守公开区敏感信息。
+- 新增 `agents/profiles/`：`modes/engineering.md`、`platforms/windows.md`、`stacks/python.md`、
+  `stacks/csharp.md`，共 4 文件 11 个锚点。`local/` 放本机手册与项目清单，已 gitignore。
+- 新增 skill `skills/agents-profile/`：`list` / `add` / `sync` / `check` / `audit` / `apply`
+  六个子命令；`add`/`apply` 幂等；单文件内联上限 24 KB；`audit` 强制由 subagent 只读执行，
+  产出 proposal 经人审阅后再机械写入。
+- 试点 `E:\Sync\handmaid`：subagent 审计后建议只内联 2 段（`windows#powershell-bom`、
+  `csharp#dotnet-build`），`stacks/python` 三段整份不内联（与正文重复、全仓零命中、无对应实现）。
+  应用后 9925 B → 11319 B，`check` 通过。
+- 审计同时发现知识库本身的错误：`stacks/csharp.md#dotnet-build` 原写「构建产物是 .dll，
+  不是可执行文件」，与实际 `OutputType=WinExe`（同时产出 exe 与 dll）冲突，已修正。
+  这正是该机制要防的失效类型。
+- 试点产出 7 条项目侧 warning（根目录 SPEC 副本缺失、viewer/src 不存在、命令块路径错位、
+  被 gitignore 的脚本仍写在文档里、悬空 global/AGENTS.md、版本号漂移），留给项目侧处理。
