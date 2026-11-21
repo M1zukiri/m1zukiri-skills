@@ -87,18 +87,25 @@ contexts: -
 | `NOTES.md` | 待决事项与同步集历史结论 |
 | `agents/AGENTS.md` | 全局行为规范正文；仓库内工作时以根 `AGENTS.md` 为准 |
 
-<!-- BEGIN inline: platforms/windows.md#powershell-bom sha=28bf6009 -->
+<!-- BEGIN inline: platforms/windows.md#powershell-bom sha=9fcd9d27 -->
 ## PowerShell 脚本编码
 
 `powershell.exe`（Windows PowerShell 5.1）执行 `.ps1` 时按系统 ANSI 代码页解码源文件。系统代码页为 936 时，UTF-8 无 BOM 的中文会被拆成乱码字节，引号与括号配对错位，报出与真实问题无关的行号。
 
+| 文件类型 | 要求 | 原因 |
+| --- | --- | --- |
+| `.ps1` | **UTF-8 BOM** | 5.1 读无 BOM 脚本按 ANSI 解析，含中文时静默少做一件事 |
+| `.vbs` | **GBK / ANSI** | WSH 按 ANSI 读，存 UTF-8 会路径失效 |
+| `requirements.txt` | **UTF-8 BOM** | 旧 pip 按 locale 解码，中文注释会崩 |
+| 其他文本 | UTF-8 无 BOM | 默认 |
+
 - 写 `.ps1` 一律存为 UTF-8 with BOM：
   `[System.IO.File]::WriteAllText($p, $s, (New-Object System.Text.UTF8Encoding($true)))`
-- 执行脚本优先 `pwsh`（PowerShell 7 原生按 UTF-8 读源文件），不要默认 `powershell`。
+- 编辑器保存会抹掉 BOM。改完 `.ps1` 跑一次 BOM 检查（`--fix` 补上），并在验收脚本里断言它。
 - 解析失败且报错位置与代码内容对不上时，先怀疑源码编码，不要顺着错误行号去改逻辑。
 <!-- END inline: platforms/windows.md#powershell-bom -->
 
-<!-- BEGIN inline: platforms/windows.md#console-encoding sha=dd77fa18 -->
+<!-- BEGIN inline: platforms/windows.md#console-encoding sha=6ccbea00 -->
 ## 控制台编码
 
 `[Console]::OutputEncoding` 只统一收/发字节编码，**不改变已启动进程对源文件的解码方式**。两者是独立的两层：
@@ -107,6 +114,8 @@ contexts: -
 - 源文件解码层：由 `powershell.exe` 启动时按 BOM / 系统代码页判定
 
 因此固定输出为 UTF-8 之后，5.1 读无 BOM 脚本仍会失败。不要在控制台编码上找源文件编码问题的解。
+
+中文 Windows 控制台是 GBK：输出里不要放 GBK 装不下的符号（`✗`、部分全角符号），`stdout` / `stderr` 用 `errors=replace`。这类地方「本机跑得好好的」不算证据。
 <!-- END inline: platforms/windows.md#console-encoding -->
 
 <!-- BEGIN inline: platforms/windows.md#script-ascii-only sha=f7dd4cd7 -->

@@ -134,3 +134,20 @@
   这正是该机制要防的失效类型。
 - 试点产出 7 条项目侧 warning（根目录 SPEC 副本缺失、viewer/src 不存在、命令块路径错位、
   被 gitignore 的脚本仍写在文档里、悬空 global/AGENTS.md、版本号漂移），留给项目侧处理。
+
+### 2026-11-21 profile 知识库合并与基线合并
+
+- 机制定为**内联唯一**：profile 不再按声明块在运行时读取，统一由 `agents-profile` 的 `add` / `sync`
+  写进项目 `AGENTS.md` 的 `BEGIN inline` 标记区；`agents/AGENTS.md` §0 写明优先级链
+  （用户指令 > 项目文件含内联区 > 全局基线）与冲突口径（以仓库 profile 为准，重跑 `sync`）。
+- `m1zukiri-profiles-md` 的 13 份原子 profile 迁入 `agents/profiles/`（modes 3 / stacks 5 /
+  platforms 2 / domains 1 / contexts 1），全部补齐 frontmatter 与段落锚点；4 个同名文件按内容合并。
+- 两份基线合并为一份：以 10 章为骨架，补回 0.2.0 的取用顺序、优先级链、文档分层、资料检索、
+  长任务纪律；PowerShell 细则下沉到 `platforms/windows` 的锚点，基线只留硬约束。
+- `m1zukiri-profiles-md` 侧：`profiles/` 删除（全文见其 git 历史），`global/AGENTS.md` 降级为指针，
+  `tools/check.py` 移除依赖仓库内基线/知识库的三条校验，README 与 `docs/agent-install.md` 改写。
+
+待决：
+
+- 19 个项目尚未跑 `agents-profile add`，它们的 `AGENTS.md` 里仍只有声明块，没有内联区。
+- `agents/profiles/local/` 尚未建立，`check --all` 依赖的 `local/projects.txt` 缺失。
