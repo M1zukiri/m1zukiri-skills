@@ -8,10 +8,15 @@
 
 | 路径 | 内容 | 公开 |
 | --- | --- | --- |
-| `modes/` | 活动模式相关的验证纪律（改代码、写文档等） | 是 |
+| `modes/` | 活动模式相关的验证纪律（改代码、写运维、做调研） | 是 |
 | `platforms/` | 操作系统相关的硬约束（编码、路径、字体、脚本执行） | 是 |
 | `stacks/` | 语言与工具链相关的约定（依赖管理、构建、运行时坑） | 是 |
+| `domains/` | 领域相关的验收口径（如与参考实现的数值对齐） | 是 |
+| `contexts/` | 工作形态相关约定（常驻 Agent 工作区） | 是 |
 | `local/` | 仅对本机有效的信息（目录位置、性能限制、休眠后如何恢复服务） | 否，已在 `.gitignore` |
+
+本目录是**唯一**的 profile 知识库。`m1zukiri-profiles-md` 只保留 `projects/`（项目档案）与
+`reference/`（调研资料），不再有 `profiles/`。
 
 `local/` 与项目无关。项目涉及本机环境时由 agent 主动查阅，不参与内联。
 
@@ -30,9 +35,9 @@
 内联时整段（含二级标题）复制进项目 `AGENTS.md`，用标记包裹：
 
 ```markdown
-<!-- BEGIN inline: profiles/platforms/windows.md#powershell-bom sha=7c3d9f2e -->
+<!-- BEGIN inline: platforms/windows.md#powershell-bom sha=7c3d9f2e -->
 ...
-<!-- END inline: profiles/platforms/windows.md#powershell-bom -->
+<!-- END inline: platforms/windows.md#powershell-bom -->
 ```
 
 `sha` 为该段正文的短哈希，供 `check` 判断是否过期。标记区由工具生成，不要手改。
